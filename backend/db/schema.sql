@@ -1,0 +1,37 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    gender TEXT NOT NULL CHECK (gender = 'Male' OR gender = 'Female'),
+    nickname TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    age INTEGER CHECK (age BETWEEN 16 AND 100),
+    firstname TEXT NOT NULL,
+    lastname TEXT NOT NULL,
+    session TEXT DEFAULT NULL,
+    dateexpired DATETIME DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(255),
+    description TEXT,
+    time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    userID INTEGER NOT NULL,
+    FOREIGN KEY (userID) REFERENCES users (id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Category(
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name_Category varchar(20) UNIQUE
+);
+
+
+CREATE TABLE IF NOT EXISTS PostCategory (
+    ID_Post INTEGER,
+    ID_Category INTEGER,
+    PRIMARY KEY (ID_Post, ID_Category),
+    FOREIGN KEY (ID_Post) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (ID_Category) REFERENCES Category(ID) ON DELETE CASCADE
+);

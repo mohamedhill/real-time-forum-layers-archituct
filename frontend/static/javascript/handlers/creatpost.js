@@ -3,12 +3,20 @@ import * as helper from "../helpers/helpers.js"
 
 export async function  creathandler(){
     const form = document.getElementById('postForm')
-const title = document.getElementById('post-title').value.trim();
-const content = document.getElementById('post-content').value.trim();
+    
+    
+    const title = document.getElementById('post-title').value.trim();
+    const content = document.getElementById('post-content').value.trim();
+    document.getElementById('post-title').value="";
+   document.getElementById('post-content').value="";
 
     const selectedCategories = Array.from(form.querySelectorAll('.category-btn'))
     .filter(btn => btn.classList.contains('active'))
-    .map(btn => btn.dataset.categoryName);
+    .map(btn =>{
+        btn.classList.remove("active")
+       return btn.dataset.categoryName
+
+    } );
 
 
         const postData = {
@@ -47,6 +55,7 @@ const content = document.getElementById('post-content').value.trim();
     } catch (err) {
         console.error('Error creating post:', err);
     }
+
 
     }
 

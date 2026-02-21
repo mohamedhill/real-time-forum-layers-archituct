@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"database/sql"
+	"strings"
+
 	db "forum/backend/database"
 	"forum/backend/models"
 )
@@ -42,11 +45,20 @@ func (r *PostRepository) AddCategory(postID int64, name string) error {
 // GetAll returns all posts ordered by newest first
 func (r *PostRepository) GetAll() ([]models.Post, error) {
 	rows, err := db.DataBase.Query(`
-		SELECT posts.id, posts.title, posts.description, posts.time, users.nickname
-		FROM posts
-		JOIN users ON posts.userID = users.id
-		ORDER BY posts.time DESC
-	`)
+        SELECT 
+            posts.id, 
+            posts.title, 
+            posts.description, 
+            posts.time, 
+            users.nickname,
+            GROUP_CONCAT(Category.Name_Category, ',') as categories
+        FROM posts
+        JOIN users ON posts.userID = users.id
+        LEFT JOIN PostCategory ON posts.id = PostCategory.ID_Post
+        LEFT JOIN Category ON PostCategory.ID_Category = Category.ID
+        GROUP BY posts.id
+        ORDER BY posts.time DESC
+    `)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +67,17 @@ func (r *PostRepository) GetAll() ([]models.Post, error) {
 	var posts []models.Post
 	for rows.Next() {
 		var p models.Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.Time, &p.Nickname); err != nil {
+		var categories sql.NullString
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.Time, &p.Nickname, &categories); err != nil {
 			continue
 		}
+
+		if categories.Valid {
+			p.Categories = strings.Split(categories.String, ",")
+		} else {
+			p.Categories = []string{}
+		}
+
 		posts = append(posts, p)
 	}
 	return posts, nil

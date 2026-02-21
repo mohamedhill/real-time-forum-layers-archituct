@@ -36,6 +36,7 @@ type Post struct {
 	Time     string   `json:"time"`
 	Nickname string   `json:"nickname"`
 	UserID   int      `json:"userID"`
+	Categories []string `json:"categories"` 
 }
 
 // PostResponse is returned after creating a post

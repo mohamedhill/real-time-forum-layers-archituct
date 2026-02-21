@@ -231,7 +231,7 @@ export async  function loadPosts() {
     const res = await fetch("posts");
     const posts = await res.json();
   
-    console.log(posts);
+   // console.log(posts);
     const container = document.getElementById("posts-container");
     container.className = "posts-grid";
     container.innerHTML = ""; 
@@ -335,10 +335,10 @@ postTime.textContent = new Date().toLocaleTimeString([], {
             <i class="fa-regular fa-bookmark intrection"></i>
         </button>
     `;
-   /*  //console.log(post);  
+    //console.log(post);  
      let categories = document.createElement("div")
      categories.id = 'categoriescontainer'
-   //  console.log(post.categories);
+  
      
        post.categories.forEach(category => {
      
@@ -347,7 +347,7 @@ postTime.textContent = new Date().toLocaleTimeString([], {
         btn.innerText = category
         categories.append(btn)
         
-       }); */
+       }); 
             //console.log(category);
             
          
@@ -363,7 +363,7 @@ postTime.textContent = new Date().toLocaleTimeString([], {
     postBody.appendChild(content);
 
     postDiv.appendChild(postBody);
-  // postDiv.appendChild(categories)
+   postDiv.appendChild(categories)
     postDiv.appendChild(actions);
 
     return postDiv;

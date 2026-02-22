@@ -1,4 +1,3 @@
-
 import *  as helpers from './javascript/helpers/helpers.js'
 import *  as showpages from './javascript/showpages/showpages.js'
 import *  as auth from './javascript/handlers/auth.js'
@@ -7,11 +6,14 @@ import { Router } from "./javascript/router/router.js";
 import * as creatpost from "./javascript/handlers/creatpost.js"
 
 
+let onetime = false
+if (!onetime){
 
-showpages.creatAuth()
- showpages.createHomePage() 
+  showpages.creatAuth()
+   showpages.createHomePage() 
+}
 
-
+onetime = true
 
 
 

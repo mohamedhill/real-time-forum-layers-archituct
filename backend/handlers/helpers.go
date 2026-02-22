@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -48,4 +49,27 @@ func clearSessionCookie(w http.ResponseWriter) {
 		MaxAge:   -1,
 		HttpOnly: true,
 	})
+}
+
+func GetUserFromSession(r *http.Request, db *sql.DB) (int, error) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		return 0, err
+	}
+
+	sessionToken := cookie.Value
+
+	var userID int
+
+	err = db.QueryRow(`
+        SELECT id
+        FROM users
+        WHERE session = ?
+        AND dateexpired > CURRENT_TIMESTAMP
+    `, sessionToken).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }

@@ -1,4 +1,5 @@
 import { icons } from "../showpages/showpages.js"
+import * as actions from "../handlers/action.js"
 
 
 export function PasswordAccess(loginPass, loginEye) {
@@ -235,9 +236,14 @@ export async  function loadPosts() {
     const container = document.getElementById("posts-container");
     container.className = "posts-grid";
     container.innerHTML = ""; 
-    
     let  postdivs = creatdivposts(posts)
+    
     container.append(...postdivs);
+    Array.from(document.getElementsByClassName("post-card")).forEach((post)=>{
+        fetchCounts(post.dataset.postId)
+        
+
+    })
     
   }
 
@@ -249,7 +255,8 @@ export async  function loadPosts() {
   
 export function creatdivposts(posts,type) {
     const container = document.getElementById("posts-container");
-
+    
+    
  if (type==='single'){
 
      container.prepend(creatonepost(posts)) ;
@@ -271,7 +278,7 @@ export function creatonepost(post) {
     
     const postDiv = document.createElement("div");
     postDiv.className = "post-card";
-
+    postDiv.dataset.postId = post.id
     const postBody = document.createElement("div");
     postBody.className = "post-body";
 
@@ -314,25 +321,26 @@ postTime.textContent = new Date().toLocaleTimeString([], {
 
     actions.innerHTML = `
         <div class="action-group">
-            <button class="action-btn like">
+            <button  class="action-btn like" data-action="like">
                 <i class="fa-regular fa-thumbs-up intrection"></i>
-                <span class="count">0</span>
+                <span class="likes-count count">0</span>
             </button>
 
-            <button class="action-btn dislike">
+            <button class="action-btn dislike" data-action="deslike">
                 <i  class="fa-regular fa-thumbs-down intrection"></i>
-                <span class="count">0</span>
+                <span class="dislikes-count count">0</span>
 
             </button>
 
-            <button class="action-btn comment">
+            <button class="action-btn comment" data-action="comment">
                 <i class="fa-regular fa-comment intrection"></i>
-                <span class="count">0</span>
+                <span class="comments-count count">0</span>
             </button>
         </div>
 
-        <button class="action-btn save">
+        <button class="action-btn save" data-action="save">
             <i class="fa-regular fa-bookmark intrection"></i>
+                <span class="saves-count count">0</span>
         </button>
     `;
     //console.log(post);  
@@ -367,4 +375,76 @@ postTime.textContent = new Date().toLocaleTimeString([], {
     postDiv.appendChild(actions);
 
     return postDiv;
+}
+
+
+export function actionevents(postDiv) {
+    postDiv.addEventListener("click", (e) => {
+     
+        const btn = e.target.closest(".action-btn");
+
+       
+        if (!btn || !postDiv.contains(btn)) return;
+
+       
+        const postCard = btn.closest(".post-card");
+        if (!postCard) return;
+
+        const postID = postCard.dataset.postId;
+        if (!postID) return;
+
+        const action = btn.dataset.action;
+        if (!action) return;
+
+        
+        actions.actionMap[action]?.(postID);
+    });
+}
+
+
+export function updateUI(postID, type) {
+  const postCard = document.querySelector(`.post-card[data-post-id="${postID}"]`);
+  if (!postCard) return;
+
+  const btn = postCard.querySelector(`.action-btn[data-action="${type}"]`);
+  if (!btn) return;
+  
+  const isActive = btn.classList.contains('active-action');
+
+  if(isActive) {
+    btn.classList.remove('active-action');
+    fetchCounts(postID, type, -1);
+  } else {
+    btn.classList.add('active-action');
+    fetchCounts(postID, type, +1);
+  }
+}
+export function rollbackUI(postID, type) {
+  const postCard = document.querySelector(`.post-card[data-post-id="${postID}"]`);
+  if (!postCard) return;
+
+  const btn = postCard.querySelector(`.action-btn[data-action="${type}"]`);
+  if(btn) btn.classList.remove('active-action');
+
+  fetchCounts(postID, type, -1);
+}
+
+
+
+export async function fetchCounts(postID, type, newaction=0) {
+    try {
+        const res = await fetch(`/reaction-counts?postId=${postID}`);
+        if (!res.ok) return;
+
+        const counts = await res.json();
+        const postCard = document.querySelector(`.post-card[data-post-id="${postID}"]`);
+        if(!postCard) return;
+
+        if(type === 'like') postCard.querySelector(".likes-count").textContent = counts.likes;
+        if(type === 'dislike') postCard.querySelector(".dislikes-count").textContent = counts.dislikes ;
+        if(type === 'save') postCard.querySelector(".saves-count").textContent = counts.saves ;
+
+    } catch(err) {
+        console.error(err);
+    }
 }

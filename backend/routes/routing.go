@@ -9,18 +9,21 @@ import (
 	"forum/backend/service"
 )
 
-// Routing wires up all dependencies and registers HTTP routes
+
 func Routing() {
 	// Repositories (data layer)
+    reactionRepo := repository.NewReactionRepository()
 	userRepo := repository.NewUserRepository()
 	postRepo := repository.NewPostRepository()
 
 	// Services (business logic layer)
+    reactionService := service.NewReactionService(reactionRepo)
 	authService := service.NewAuthService(userRepo)
 	sessionService := service.NewSessionService(userRepo)
 	postService := service.NewPostService(postRepo)
 
 	// Handlers (presentation layer)
+    reactionHandler := handlers.NewReactionHandler(reactionService, sessionService)
 	loginHandler := handlers.NewLoginHandler(authService)
 	registerHandler := handlers.NewRegisterHandler(authService)
 	logoutHandler := handlers.NewLogoutHandler(authService)
@@ -28,6 +31,8 @@ func Routing() {
 	postHandler := handlers.NewPostHandler(postService, sessionService)
 
 	// Routes
+	http.HandleFunc("/react", reactionHandler.React)
+    http.HandleFunc("/reaction-counts", reactionHandler.GetCounts)
 	http.Handle("/static/", handlers.StaticHandler())
 	http.Handle("/registerAuth", registerHandler)
 	http.Handle("/loginAuth", loginHandler)

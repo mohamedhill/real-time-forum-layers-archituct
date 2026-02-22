@@ -53,3 +53,16 @@ type Session struct {
 	Nickname  string
 	ExpiresAt string
 }
+
+
+
+type ReactionInput struct {
+    PostID string    `json:"postId"`
+    Type   string `json:"type"`
+}
+
+type ReactionCounts struct {
+    Likes    int `json:"likes"`
+    Dislikes int `json:"dislikes"`
+    Saves    int `json:"saves"`
+}

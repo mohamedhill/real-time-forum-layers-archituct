@@ -175,7 +175,7 @@ function group() {
   g.append(
     input("firstname", "First Name"),
     input("lastname", "Last Name"),
-    input("age", "Age"),
+    input("age", "Age","number"),
     gender(),
   );
 
@@ -301,34 +301,42 @@ export function showhome() {
   app.append(homediv.back);
 
   helpers.loadPosts()
-
-
+  
+  
+  
   icons = document.querySelectorAll("i[data-theme]");
-
+  
   helpers.setTheme(localStorage.getItem("theme") || "light");
-
+  
   icons.forEach((icon) => {
     icon.addEventListener("click", () =>
       helpers.setTheme(icon.getAttribute("data-theme")),
-    );
-  });
+  );
+});
 
-  const messagesBtn = document.getElementById("messagesBtn");
-  messagesBtn.addEventListener("click", () => {
-    rightSidebar.classList.toggle("visible");
-    messagesBtn.classList.toggle("active");
-  });
+const messagesBtn = document.getElementById("messagesBtn");
+messagesBtn.addEventListener("click", () => {
+  rightSidebar.classList.toggle("visible");
+  messagesBtn.classList.toggle("active");
+});
 
-  const btn = document.getElementById("showloginbtn");
-
+const btn = document.getElementById("showloginbtn");
 btn.addEventListener("click", e => {
   e.preventDefault(); 
-
+  
   auth.Logout();
 });
 helpers.navactive()
 helpers.showcreatpost()
 helpers.selectorcategoy()
+let btns = document.getElementsByClassName('action-btn');
+ //console.log(btns);
+ 
+ let postdiv =document.getElementById("posts-container")
+helpers.actionevents(postdiv)
+
+
+
 
 }
 export function showAuth() {
@@ -337,14 +345,10 @@ export function showAuth() {
   app.append(authdiv.header);
   app.append(authdiv.back);
   app.append(authdiv.container);
-  helpers.PasswordAccess("password", "loginPassword");
-  helpers.PasswordRegister("passwordCreate", "loginPasswordCreate");
+  helpers.PasswordAccess("password", "loginPassword","password");
+  helpers.PasswordRegister("passwordCreate", "loginPasswordCreate","password");
 helpers.checkinput()
   helpers.Swaploginregister();
 }
 
 
-export function closecreat(){
-document.body.addEventListener("click")
-
-}

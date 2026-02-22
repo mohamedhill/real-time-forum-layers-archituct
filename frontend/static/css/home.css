@@ -693,8 +693,13 @@
     }
 
     .action-btn:hover { color: #4f46e5; }
-    .action-btn.dislike:hover { color: #ef4444; }
-    .action-btn.save:hover { color: #f59e0b; }
+    .action-btn.dislike:hover { color: #4f46e5; }
+    .action-btn.save:hover { color: #4f46e5; }
+    .active-action{
+    color: #4f46e5;
+
+    }
+
 
     .count { font-size: 12px; font-weight: 600; }
     

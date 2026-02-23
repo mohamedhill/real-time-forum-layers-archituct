@@ -61,8 +61,14 @@ type ReactionInput struct {
     Type   string `json:"type"`
 }
 
-type ReactionCounts struct {
-    Likes    int `json:"likes"`
-    Dislikes int `json:"dislikes"`
-    Saves    int `json:"saves"`
+
+
+
+type ReactionState struct {
+	Likes      int  `json:"likes"`
+	Dislikes   int   `json:"dislikes"`
+	Saves      int	 `json:"saves"`
+	IsLiked    bool	  `json:"isliked"`
+	IsDisliked bool    `json:"isdisliked"`
+	IsSaved    bool    `json:"issaved"`
 }

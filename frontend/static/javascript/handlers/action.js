@@ -1,4 +1,4 @@
-import *  as helpers from '../helpers/helpers.js'
+/* import *  as helpers from '../helpers/helpers.js'
 
 
 
@@ -24,8 +24,7 @@ async function react(postID, type) {
 
     if (!res.ok) throw new Error("Failed request");
 
-/*     const data = await res.json();
-    console.log("Reaction updated:", data); */
+
 
   } catch (err) {
       console.log(JSON.stringify({ postId: postID, type }));
@@ -33,4 +32,4 @@ async function react(postID, type) {
  
     helpers.rollbackUI(postID, type);
   }
-}
+} */

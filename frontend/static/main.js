@@ -1,54 +1,39 @@
-import *  as helpers from './javascript/helpers/helpers.js'
-import *  as showpages from './javascript/showpages/showpages.js'
-import *  as auth from './javascript/handlers/auth.js'
-import *  as check from './javascript/helpers/checkvalidityinfo.js'
 import { Router } from "./javascript/router/router.js";
-import * as creatpost from "./javascript/handlers/creatpost.js"
+import * as HomeView from "./javascript/views/HomeView.js";
+import * as AuthController from "./javascript/controllers/AuthController.js";
+import * as HomeController from "./javascript/controllers/HomeController.js";
+import * as PostController from "./javascript/controllers/PostController.js";
 
 
-let onetime = false
-if (!onetime){
+// Build DOM structures once at startup so route switches are instant.
+HomeView.buildHomePage();
 
-  showpages.creatAuth()
-   showpages.createHomePage() 
+//  Router 
+
+function pageNotFound() {
+  document.body.innerHTML = "<h1>404 — Page Not Found</h1>";
 }
 
-onetime = true
-
-
-
-
-
-let app = document.body
-
-
-function PageNotFound() {
-    app.innerHTML = "<h1>Error</h1>"
-}
 new Router()
-  .on("/", () => auth.guardRoute(showpages.showhome,"home"))
-  .on("/login", () => auth.guardRoute(showpages.showAuth,"auth"))
-  .listen(PageNotFound);
+  .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
+  .on("/login", () => AuthController.guardRoute(AuthController.showAuthPage, "auth"))
+  .listen(pageNotFound);
 
-document.body.addEventListener("submit", e => {
+// All form submissions are caught here and routed to the correct Controller.
+
+document.body.addEventListener("submit", (e) => {
   if (e.target.id === "loginform") {
-    e.preventDefault(); 
-    auth.Login();
+    e.preventDefault();
+    AuthController.handleLogin();
   }
 
   if (e.target.id === "registerform") {
     e.preventDefault();
-    auth.Register();
+    AuthController.handleRegister();
   }
 
-  if (e.target.id === "postForm"){
+  if (e.target.id === "postForm") {
     e.preventDefault();
-    creatpost.creathandler()
-
-
+    PostController.handleCreatePost();
   }
 });
-
-
-
-

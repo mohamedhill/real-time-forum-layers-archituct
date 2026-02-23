@@ -1,4 +1,4 @@
-import *  as check from '../helpers/checkvalidityinfo.js'
+/* import *  as check from '../helpers/checkvalidityinfo.js'
 import *  as showpages from '../showpages/showpages.js'
 
 
@@ -136,3 +136,4 @@ function safeNavigate(path) {
 }
 
 
+ */

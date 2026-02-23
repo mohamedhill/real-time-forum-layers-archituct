@@ -41,15 +41,18 @@ func (s *ReactionService) ToggleReaction(postID, userID int, t string) error {
 	return s.repo.Add(postID, userID, t)
 }
 
-func (s *ReactionService) GetCounts(postID int) (models.ReactionCounts, error) {
-	l, d, saves, err := s.repo.Count(postID)
+func (s *ReactionService) GetFullState(postID, userID int) (models.ReactionState, error) {
+	l, d, sCount, isL, isD, isS, err := s.repo.CountWithUser(postID, userID)
 	if err != nil {
-		return models.ReactionCounts{}, err
+		return models.ReactionState{}, err
 	}
 
-	return models.ReactionCounts{
-		Likes:    l,
-		Dislikes: d,
-		Saves:    saves,
+	return models.ReactionState{
+		Likes:       l,
+		Dislikes:    d,
+		Saves:       sCount,
+		IsLiked:     isL,
+		IsDisliked:  isD,
+		IsSaved:     isS,
 	}, nil
 }

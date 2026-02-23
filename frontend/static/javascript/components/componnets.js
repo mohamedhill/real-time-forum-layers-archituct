@@ -84,7 +84,7 @@ export const mainContent = `
         
           
         </div>
-      <div id="posts-container" class="posts-grid-layout"></div>
+      <div id="posts-container" class="posts-grid-layout posts-grid" ></div>
       </div>
     `
 

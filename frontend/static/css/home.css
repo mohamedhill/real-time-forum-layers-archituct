@@ -692,9 +692,9 @@
         transition: color 0.2s;
     }
 
-    .action-btn:hover { color: #4f46e5; }
+ /*    .action-btn:hover { color: #4f46e5; }
     .action-btn.dislike:hover { color: #4f46e5; }
-    .action-btn.save:hover { color: #4f46e5; }
+    .action-btn.save:hover { color: #4f46e5; } */
     .active-action{
     color: #4f46e5;
 

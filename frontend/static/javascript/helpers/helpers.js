@@ -1,4 +1,4 @@
-import { icons } from "../showpages/showpages.js"
+/* import { icons } from "../showpages/showpages.js"
 import * as actions from "../handlers/action.js"
 
 
@@ -413,10 +413,10 @@ export function updateUI(postID, type) {
 
   if(isActive) {
     btn.classList.remove('active-action');
-    fetchCounts(postID, type, -1);
+   // fetchCounts(postID, type, -1);
   } else {
     btn.classList.add('active-action');
-    fetchCounts(postID, type, +1);
+   // fetchCounts(postID, type, +1);
   }
 }
 export function rollbackUI(postID, type) {
@@ -426,7 +426,7 @@ export function rollbackUI(postID, type) {
   const btn = postCard.querySelector(`.action-btn[data-action="${type}"]`);
   if(btn) btn.classList.remove('active-action');
 
-  fetchCounts(postID, type, -1);
+ // fetchCounts(postID, type, -1);
 }
 
 
@@ -447,4 +447,4 @@ export async function fetchCounts(postID, type, newaction=0) {
     } catch(err) {
         console.error(err);
     }
-}
+} */

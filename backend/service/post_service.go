@@ -2,7 +2,9 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"forum/backend/models"
 	"forum/backend/repository"
@@ -39,11 +41,13 @@ func (s *PostService) CreatePost(input models.PostInput, userID int, nickname st
 			return nil, ErrInternal
 		}
 	}
-
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Println(currentTime)
 	return &models.PostResponse{
 		ID:         postID,
 		Nickname:   nickname,
 		Categories: input.Categories,
+		Time:       currentTime,
 	}, nil
 }
 

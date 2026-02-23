@@ -1,4 +1,4 @@
-import * as helpers from "../helpers/helpers.js";
+/* import * as helpers from "../helpers/helpers.js";
 import * as auth from "../handlers/auth.js"
 import * as creat from "../handlers/creatpost.js"
 import * as components from "../components/componnets.js"
@@ -352,3 +352,4 @@ helpers.checkinput()
 }
 
 
+ */

@@ -4,27 +4,41 @@ import * as HomeView from "../views/HomeView.js";
 
 
 // gheda an9ad blan dyal when i like togle dislike and l3aks
+let reactionLoading = false;
+
 export async function handleReaction(postId, type) {
-  // Optimistic UI update
-  console.log(type);
-  
-  let bool = HomeView.toggleReactionActive(postId, type);
-  //await _syncCounts(postId, type, +1);
- 
-  
-  HomeView.updateReactionCounts(postId,bool,type)
+  if (reactionLoading) return; 
+  reactionLoading = true;
+
+  const result = HomeView.toggleReactionActive(postId, type);
+  if (!result) {
+    reactionLoading = false;
+    return;
+  }
+
+  const { wasActive, oppositeWasActive } = result;
+
+  HomeView.updateReactionCounts(
+    postId,
+    wasActive,
+    oppositeWasActive,
+    type
+  );
+
   try {
     await ReactionModel.sendReaction(postId, type);
-  } catch {
-    // Rollback on failure
-    ;
-    
-     HomeView.updateReactionCounts(postId, !bool, type);
-    HomeView.removeReactionActive(postId, type);
-    
-    
-    //await _syncCounts(postId, type, -1);
+  } catch (err) {
+    HomeView.toggleReactionActive(postId, type);
+
+    HomeView.updateReactionCounts(
+      postId,
+      !wasActive,
+      oppositeWasActive,
+      type
+    );
   }
+
+  reactionLoading = false;
 }
 
 export async function loadCountsForPost(postId) {

@@ -22,21 +22,41 @@ func (s *ReactionService) ToggleReaction(postID, userID int, t string) error {
 		return ErrInvalidReaction
 	}
 
+
+	if t == "save" {
+		exists, err := s.repo.Exists(postID, userID, "save")
+		if err != nil {
+			return err
+		}
+
+		if exists {
+			return s.repo.Remove(postID, userID, "save")
+		}
+		return s.repo.Add(postID, userID, "save")
+	}
+
+	
+
 	exists, err := s.repo.Exists(postID, userID, t)
 	if err != nil {
 		return err
 	}
 
+	
 	if exists {
 		return s.repo.Remove(postID, userID, t)
 	}
 
+	
+	opposite := "like"
 	if t == "like" {
-		s.repo.Remove(postID, userID, "dislike")
+		opposite = "dislike"
 	}
-	if t == "dislike" {
-		s.repo.Remove(postID, userID, "like")
+
+	if err := s.repo.Remove(postID, userID, opposite); err != nil {
+		return err
 	}
+
 
 	return s.repo.Add(postID, userID, t)
 }

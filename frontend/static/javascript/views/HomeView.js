@@ -55,14 +55,14 @@ export function applyTheme(theme) {
   if (theme === "dark") {
     if (light) light.style.display = "flex";
     if (dark) dark.style.display = "none";
-    if (logo) logo.src = "static/img/darklogo.png";
+    if (logo) logo.src = "static/img/logo-remove.png";
     if (back) back.src = "static/img/darkback.png";
     document.body.classList.add("dark-mode");
     document.body.classList.remove("light-mode");
   } else {
     if (dark) dark.style.display = "flex";
     if (light) light.style.display = "none";
-    if (logo) logo.src = "static/img/logo.png";
+    if (logo) logo.src = "static/img/logo-remove.png";
     if (back) back.src = "static/img/back.png";
     document.body.classList.remove("dark-mode");
     document.body.classList.add("light-mode");
@@ -144,7 +144,7 @@ const formattedTime = date.toLocaleString("en-US", {
   categories.id = "categoriescontainer";
   (post.categories || []).forEach((cat) => {
     const btn = document.createElement("button");
-    btn.className = "category-btn";
+    btn.className = "category-post";
     btn.innerText = cat;
     categories.appendChild(btn);
   });
@@ -191,17 +191,37 @@ export function prependPostCard(post) {
 //  Reaction UI 
 
 export function toggleReactionActive(postId, type) {
-  const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-  if (!postCard) return false;
+  const postCard = document.querySelector(
+    `.post-card[data-post-id="${postId}"]`
+  );
+  if (!postCard) return null;
 
-  const btn = postCard.querySelector(`.action-btn[data-action="${type}"]`);
-  console.log(btn);
-  
-  if (!btn) return false;
+  const btn = postCard.querySelector(
+    `.action-btn[data-action="${type}"]`
+  );
+  if (!btn) return null;
 
   const wasActive = btn.classList.contains("active-action");
+
+  let oppositeWasActive = false;
+
+  if (type === "like" || type === "dislike") {
+    const oppositeType = type === "like" ? "dislike" : "like";
+    const oppositeBtn = postCard.querySelector(
+      `.action-btn[data-action="${oppositeType}"]`
+    );
+
+    if (oppositeBtn) {
+      oppositeWasActive =
+        oppositeBtn.classList.contains("active-action");
+
+      oppositeBtn.classList.remove("active-action");
+    }
+  }
+
   btn.classList.toggle("active-action");
-  return wasActive;
+
+  return { wasActive, oppositeWasActive };
 }
 
 export function removeReactionActive(postId,type) {
@@ -210,31 +230,45 @@ export function removeReactionActive(postId,type) {
   const btn = postCard.querySelector(`.action-btn[data-action="${type}"]`);
   if (btn) btn.classList.remove("active-action");
 }
-
-export function updateReactionCounts(postId,wasActive,type) {
+export function updateReactionCounts(postId,wasActive,oppositeWasActive,type) {
   const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
   if (!postCard) return;
-    let toggle = wasActive ? -1 : +1;
-  if (type === "like"){
 
-    let count = postCard.querySelector(".likes-count")
-     let   newcount =  parseInt(count.textContent)+toggle
-     count.textContent = newcount
+  const change = wasActive ? -1 : +1;
+
+  if (type === "like") {
+    const likeCount = postCard.querySelector(".likes-count");
+    likeCount.textContent =
+      parseInt(likeCount.textContent) + change;
+
+    if (!wasActive && oppositeWasActive) {
+      const dislikeCount =
+        postCard.querySelector(".dislikes-count");
+      dislikeCount.textContent =
+        parseInt(dislikeCount.textContent) - 1;
+    }
   }
 
-  if (type === "dislike"){
-     let count = postCard.querySelector(".dislikes-count")
-     let   newcount =  parseInt(count.textContent)+toggle
-     count.textContent = newcount
+  if (type === "dislike") {
+    const dislikeCount =
+      postCard.querySelector(".dislikes-count");
+    dislikeCount.textContent =
+      parseInt(dislikeCount.textContent) + change;
+
+    if (!wasActive && oppositeWasActive) {
+      const likeCount =
+        postCard.querySelector(".likes-count");
+      likeCount.textContent =
+        parseInt(likeCount.textContent) - 1;
+    }
   }
-    
-  if (type === "save"){
-       let count = postCard.querySelector(".saves-count")
-     let   newcount =  parseInt(count.textContent)+toggle
-     count.textContent = newcount
-    
+
+  if (type === "save") {
+    const saveCount =
+      postCard.querySelector(".saves-count");
+    saveCount.textContent =
+      parseInt(saveCount.textContent) + change;
   }
-    
 }
 
 export function updateAllReactionCounts(postId, counts) {

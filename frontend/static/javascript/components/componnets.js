@@ -4,7 +4,7 @@ export const sidebar = `
 
       <a draggable="false" href="/">
       
-      <img draggable="false" id="homelogo" class="homelogo" src="static/img/logo.png" alt="">
+      <img draggable="false" id="homelogo" class="homelogo" src="static/img/logo-remove.png" alt="">
       
       </a>
 

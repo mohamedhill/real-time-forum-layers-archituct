@@ -3,6 +3,8 @@ import * as HomeView from "./javascript/views/HomeView.js";
 import * as AuthController from "./javascript/controllers/AuthController.js";
 import * as HomeController from "./javascript/controllers/HomeController.js";
 import * as PostController from "./javascript/controllers/PostController.js";
+import * as templates from "./javascript/components/componnets.js";
+
 
 
 // Build DOM structures once at startup so route switches are instant.
@@ -11,12 +13,13 @@ HomeView.buildHomePage();
 //  Router 
 
 function pageNotFound() {
-  document.body.innerHTML = "<h1>404 — Page Not Found</h1>";
+  document.body.innerHTML = templates.errorpage;
 }
 
 new Router()
-  .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
-  .on("/login", () => AuthController.guardRoute(AuthController.showAuthPage, "auth"))
+    .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
+        .on("/login", () => AuthController.guardRoute(() => AuthController.showAuthPage('login'), "auth"))
+    .on("/register", () => AuthController.guardRoute(() => AuthController.showAuthPage('register'), "auth"))
   .listen(pageNotFound);
 
 // All form submissions are caught here and routed to the correct Controller.

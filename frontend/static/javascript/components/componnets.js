@@ -86,6 +86,34 @@ export const mainContent = `
         </div>
       <div id="posts-container" class="posts-grid-layout posts-grid" ></div>
       </div>
+      <div class="mobile-nav">
+  <nav class="nav-bar-bottum">
+  <button class="nav-bottum active">
+    <i class="ri-home-5-line"></i>
+    <span>Home</span>
+  </button>
+
+  <button class="nav-bottum">
+    <i class="ri-compass-3-line"></i>
+    <span>Explore</span>
+  </button>
+
+  <button class="nav-bottum">
+    <i class="ri-notification-3-line"></i>
+    <span>Notifications</span>
+  </button>
+
+  <button class="nav-bottum" id="messagesBtn">
+    <i class="ri-message-3-line"></i>
+    <span>Messages</span>
+  </button>
+
+  <button class="nav-bottum">
+    <i class="ri-heart-3-line"></i>
+    <span>Liked Posts</span>
+  </button>
+</nav>
+</div>
     `
 
    export const rightSidebar = `
@@ -140,3 +168,18 @@ export const mainContent = `
 
 
     
+    export const errorpage = `
+        <div class="error-container">
+          <div class="error-content">
+            <h1 class="error-code">404</h1>
+            <div class="error-icon">
+              <i class="ri-map-pin-user-line"></i>
+            </div>
+            <h2>Oops! You're lost in space.</h2>
+            <p>The page you are looking for doesn't exist or has been moved.</p>
+            <a href="/" class="back-home-btn">
+              <i class="ri-home-5-line"></i> Back to Home
+            </a>
+          </div>
+        </div>
+      `

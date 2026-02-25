@@ -189,7 +189,7 @@ a {
   font-size: var(--small-font-size);
 }
 
-.login__switch button {
+.login__switch a {
   background: none;
   color: #7E99D8;
   font-size: var(--small-font-size);
@@ -236,7 +236,7 @@ a {
 
 @media screen and (max-width: 320px) {
   .container {
-    margin-inline: 1rem;
+    margin-inline: auto;
   }
 }
 
@@ -290,7 +290,8 @@ a {
 }
 
 #logo{
-
+position: fixed;
+top: 10px;
 width: 200px;
 }
 

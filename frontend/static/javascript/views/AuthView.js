@@ -102,10 +102,10 @@ export function buildLoginForm() {
   sw.className = "login__switch";
   sw.append(document.createTextNode("Don't have an account? "));
 
-  const swBtn = document.createElement("button");
+  const swBtn = document.createElement("a");
   swBtn.id = "loginButtonRegister";
   swBtn.textContent = "Create Account";
-  swBtn.type = "button";
+  swBtn.src = "/register";
   sw.appendChild(swBtn);
 
   area.append(form, sw);
@@ -149,10 +149,10 @@ export function buildRegisterForm() {
   sw.className = "login__switch";
   sw.append("Already have an account? ");
 
-  const swBtn = document.createElement("button");
+  const swBtn = document.createElement("a");
   swBtn.id = "loginButtonAccess";
   swBtn.textContent = "Log In";
-  swBtn.type = "button";
+  swBtn.src = "/login";
   sw.appendChild(swBtn);
 
   area.append(form, sw);
@@ -240,8 +240,8 @@ export function bindSwapLoginRegister() {
   const toLogin = document.getElementById("loginButtonAccess");
   if (!container || !toRegister || !toLogin) return;
 
-  toRegister.addEventListener("click", () => container.classList.add("active"));
-  toLogin.addEventListener("click", () => container.classList.remove("active"));
+  toRegister.addEventListener("click", () =>  navigation.navigate("/register"));
+  toLogin.addEventListener("click", ()=> navigation.navigate("/login"));
 }
 
 export function bindInputValidationStyles() {

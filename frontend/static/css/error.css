@@ -1,0 +1,71 @@
+    :root {
+            --intrection : #6B7280;
+            --body-color: white;
+            --border-muted: #e5e7eb;
+            --text-dark: hsl(220, 68%, 4%);
+            --muted: #6b7280;
+            --icon-color: #4b5563;
+            --nav-hover : #b1c8ff;
+            --btn : #7E99D8 ;
+        }
+
+
+
+.error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--body-color); /* Matches your background */
+  color: var(--text-dark);
+  text-align: center;
+  font-family: 'apple-system', sans-serif;
+}
+
+.error-content {
+  padding: 40px;
+  background: var(--body-color); /* Matches your card surface */
+  border-radius: 20px;
+  border: 1px solid var(--nav-hover); /* Subtle purple glow */
+  box-shadow: 0 10px 30px var(--btn);
+  max-width: 400px;
+  width: 90%;
+}
+
+.error-code {
+  font-size: 80px;
+  margin: 0;
+  background: linear-gradient(45deg, var(--nav-hover), var(--btn));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.error-icon {
+  font-size: 50px;
+  color: var(--btn);
+  margin-bottom: 20px;
+}
+
+.error-content p {
+  color: var(--muted);
+  margin: 15px 0 30px 0;
+}
+
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color:var(--btn);
+  color: var(--border-muted);
+  padding: 12px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.back-home-btn:hover {
+
+  transform: translateY(-2px);
+}

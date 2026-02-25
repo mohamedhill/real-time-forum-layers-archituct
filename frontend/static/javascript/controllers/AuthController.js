@@ -99,8 +99,25 @@ export async function handleLogout() {
 
 //  Show Auth Page 
 
-export function showAuthPage() {
+export function showAuthPage(type) {
+  
   AuthView.renderAuthPage();
+  const container = document.getElementById("loginAccessRegister");
+if (type=='register'){
+ container.classList.remove("active");    
+  
+  requestAnimationFrame(() => {
+    container.classList.add("active");
+  });
+}
+if (type === 'login'){
+
+ container.classList.add("active");    
+
+    requestAnimationFrame(() => {
+    container.classList.remove("active");
+  });
+}
   AuthView.togglePasswordVisibility("password", "loginPassword");
   AuthView.togglePasswordVisibility("passwordCreate", "loginPasswordCreate");
   AuthView.bindSwapLoginRegister();

@@ -29,22 +29,39 @@ export function showHomePage() {
   }
 
   // Messages sidebar toggle
-  const messagesBtn = document.getElementById("messagesBtn");
+  const messagesBtn = Array.from(document.getElementsByClassName("messagesBtn"));
+  //console.log(messagesBtn);
+  
   if (messagesBtn) {
-    messagesBtn.addEventListener("click", () => {
-      rightSidebar.classList.toggle("visible");
-      messagesBtn.classList.toggle("active");
-    });
+    messagesBtn.forEach((msg)=>{
+
+
+     // console.log(msg);
+      msg.addEventListener("click", () => {
+        console.log(msg);
+        
+        rightSidebar.classList.toggle("visible");
+        msg.classList.toggle("active");
+      });
+    })
   }
 
   // Nav item active state
   Array.from(document.getElementsByClassName("nav-item"))
     .slice(1)
     .forEach((item) => {
-      if (item.id !== "messagesBtn") {
+      if (!item.classList.contains('messagesBtn')){
         item.addEventListener("click", () => item.classList.toggle("active"));
       }
     });
+
+     Array.from(document.getElementsByClassName("nav-bottum"))
+    .slice(1)
+    .forEach((item) => {
+      if (!item.classList.contains('messagesBtn')){
+        item.addEventListener("click", () => item.classList.toggle("active"));
+      }
+    });    
 
   // Create-post modal triggers
   const creatPostBtn = document.getElementById("creat-post-btn");

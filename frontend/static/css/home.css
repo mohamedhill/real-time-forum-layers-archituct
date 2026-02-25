@@ -836,7 +836,10 @@ flex-wrap: wrap;
 }
 
 
+.nav-bottum.active{
+    color: #887ce7;
 
+}
 
 
 .nav-bottum span {

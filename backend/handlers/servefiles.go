@@ -27,3 +27,4 @@ func Showhome(w http.ResponseWriter, r *http.Request) {
 func StaticHandler() http.Handler {
 	return http.StripPrefix("/static/", http.FileServer(http.Dir("../../frontend/static")))
 }
+	

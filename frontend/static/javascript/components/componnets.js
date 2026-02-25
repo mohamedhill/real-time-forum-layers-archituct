@@ -25,7 +25,7 @@ export const sidebar = `
     <span>Notifications</span>
   </button>
 
-  <button class="nav-item" id="messagesBtn">
+  <button class="nav-item messagesBtn">
     <i class="ri-message-3-line"></i>
     <span>Messages</span>
   </button>
@@ -103,7 +103,7 @@ export const mainContent = `
     <span>Notifications</span>
   </button>
 
-  <button class="nav-bottum" id="messagesBtn">
+  <button class="nav-bottum messagesBtn">
     <i class="ri-message-3-line"></i>
     <span>Messages</span>
   </button>

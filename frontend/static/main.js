@@ -16,6 +16,8 @@ function pageNotFound() {
   document.body.innerHTML = templates.errorpage;
 }
 
+
+
 new Router()
     .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
         .on("/login", () => AuthController.guardRoute(() => AuthController.showAuthPage('login'), "auth"))

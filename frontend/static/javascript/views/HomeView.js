@@ -92,7 +92,6 @@ export function hideCreatePostModal() {
 export function buildPostCard(post) {
   const postDiv = document.createElement("div");
   postDiv.className = "post-card";
-  console.log(post.id);
   
   postDiv.dataset.postId = post.id;
 

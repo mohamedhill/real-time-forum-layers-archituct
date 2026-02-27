@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -42,7 +41,7 @@ func (s *PostService) CreatePost(input models.PostInput, userID int, nickname st
 		}
 	}
 	currentTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Println(currentTime)
+
 	return &models.PostResponse{
 		ID:         postID,
 		Nickname:   nickname,
@@ -57,5 +56,33 @@ func (s *PostService) GetAllPosts() ([]models.Post, error) {
 	if err != nil {
 		return nil, ErrInternal
 	}
+	return posts, nil
+}
+
+// GetLikedPosts returns posts liked by the given user
+func (s *PostService) GetLikedPosts(userID int) ([]models.Post, error) {
+	if userID <= 0 {
+		return nil, errors.New("invalid user id")
+	}
+
+	posts, err := s.postRepo.GetLikedPosts(userID)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	return posts, nil
+}
+
+// GetsavedPosts returns posts saved by the given user
+func (s *PostService) GetsavedPosts(userID int) ([]models.Post, error) {
+	if userID <= 0 {
+		return nil, errors.New("invalid user id")
+	}
+
+	posts, err := s.postRepo.GetSavededPosts(userID)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
 	return posts, nil
 }

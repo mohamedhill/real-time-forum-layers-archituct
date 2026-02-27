@@ -16,6 +16,8 @@ function safeNavigate(path) {
 //  Route guard 
 
 export async function guardRoute(onGranted, routeType) {
+ 
+  
   try {
     const status = await AuthModel.checkSession();
 

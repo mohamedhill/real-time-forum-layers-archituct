@@ -2,10 +2,12 @@ import * as HomeView from "../views/HomeView.js";
 import * as PostController from "./PostController.js";
 import * as ReactionController from "./ReactionController.js";
 import * as AuthController from "./AuthController.js";
+import * as navigate from "../navigation/Navigation.js"
 
 export function showHomePage() {
   const { rightSidebar } = HomeView.renderHomePage();
-
+navigate.setActiveNav("/")
+rightSidebar.classList.remove('visible')
   // Posts
   PostController.loadPosts();
 
@@ -29,39 +31,41 @@ export function showHomePage() {
   }
 
   // Messages sidebar toggle
-  const messagesBtn = Array.from(document.getElementsByClassName("messagesBtn"));
-  //console.log(messagesBtn);
-  
+/*   const messagesBtn = Array.from(document.getElementsByClassName("messagesBtn"));
+
+
   if (messagesBtn) {
-    messagesBtn.forEach((msg)=>{
+    messagesBtn.forEach((msg) => {
 
-
-     // console.log(msg);
       msg.addEventListener("click", () => {
-        console.log(msg);
-        
-        rightSidebar.classList.toggle("visible");
-        msg.classList.toggle("active");
-      });
+
+        if (msg.id === "buttommsg") {
+          const main = document.getElementsByClassName('main-content')[0]
+          main.classList.toggle("hidden")
+        }
+
+        rightSidebar.classList.toggle("visible")
+        msg.classList.toggle("active")
+      })
     })
-  }
+  } */
 
   // Nav item active state
-  Array.from(document.getElementsByClassName("nav-item"))
-    .slice(1)
-    .forEach((item) => {
-      if (!item.classList.contains('messagesBtn')){
-        item.addEventListener("click", () => item.classList.toggle("active"));
-      }
-    });
 
-     Array.from(document.getElementsByClassName("nav-bottum"))
-    .slice(1)
+ /*  document.querySelectorAll(".nav-item, .nav-bottum")
     .forEach((item) => {
-      if (!item.classList.contains('messagesBtn')){
-        item.addEventListener("click", () => item.classList.toggle("active"));
+      if (!item.classList.contains("messagesBtn")) {
+        item.addEventListener("click", () => {
+          item.classList.toggle("active")
+        })
       }
-    });    
+    })
+ */
+
+    navigate.initNavigation()
+
+
+
 
   // Create-post modal triggers
   const creatPostBtn = document.getElementById("creat-post-btn");
@@ -90,19 +94,23 @@ export function showHomePage() {
   if (postsContainer) {
     postsContainer.addEventListener("click", (e) => {
       const btn = e.target.closest(".action-btn");
-      
+
       if (!btn || !postsContainer.contains(btn)) return;
-      
+
       const postCard = btn.closest(".post-card");
       if (!postCard) return;
-      
+
       const postId = postCard.dataset.postId;
       const action = btn.dataset.action;
       if (!postId || !action) return;
-     console.log(action);
      
+
 
       ReactionController.actionMap[action]?.(postId);
     });
   }
 }
+
+
+
+

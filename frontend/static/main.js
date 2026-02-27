@@ -4,6 +4,12 @@ import * as AuthController from "./javascript/controllers/AuthController.js";
 import * as HomeController from "./javascript/controllers/HomeController.js";
 import * as PostController from "./javascript/controllers/PostController.js";
 import * as templates from "./javascript/components/componnets.js";
+import * as messages from "./javascript/controllers/MessagesController.js"
+import * as liked from "./javascript/controllers/LikedController.js"
+import * as saved from "./javascript/controllers/SavedController.js"
+
+
+
 
 
 
@@ -22,6 +28,9 @@ new Router()
     .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
         .on("/login", () => AuthController.guardRoute(() => AuthController.showAuthPage('login'), "auth"))
     .on("/register", () => AuthController.guardRoute(() => AuthController.showAuthPage('register'), "auth"))
+    .on("/messages",()=>AuthController.guardRoute(()=>messages.ShowMessagesPage(),"home"))
+    .on("/likedpost",()=>AuthController.guardRoute(()=>liked.getlikedpost(),"home"))
+    .on("/saved",()=>AuthController.guardRoute(()=>saved.getsavedpost(),"home"))
   .listen(pageNotFound);
 
 // All form submissions are caught here and routed to the correct Controller.

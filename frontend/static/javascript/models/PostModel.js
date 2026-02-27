@@ -18,3 +18,37 @@ export async function createPost(postData) {
   const json = await res.json();
   return { ok: res.ok, status: res.status, data: json };
 }
+
+
+export async function getLikedPosts() {
+  
+    const response = await fetch("/liked-posts", {
+      method: "GET",
+      credentials: "include", 
+    });
+
+    if (!response.ok) {
+      alert("Failed to fetch liked posts");
+      return
+    }
+
+    return response.json();
+
+}
+
+
+export async function getSavedPosts() {
+  
+    const response = await fetch("/saved-posts", {
+      method: "GET",
+      credentials: "include", 
+    });
+
+    if (!response.ok) {
+      alert("Failed to fetch liked posts");
+      return
+    }
+
+    return response.json();
+
+}

@@ -46,7 +46,7 @@ export async function loadCountsForPost(postId) {
     const counts = await ReactionModel.fetchReactionCounts(postId);
     HomeView.updateAllReactionCounts(postId, counts);
   } catch (err) {
-    console.error("Failed to load reaction counts:", err);
+  alert("Failed to load reaction counts:", err);
   }
 }
 

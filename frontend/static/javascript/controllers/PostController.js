@@ -15,6 +15,33 @@ export async function loadPosts() {
   });
 }
 
+export async function loadlikedposts() {
+  const posts = await PostModel.getLikedPosts();
+  console.log(posts);
+  
+  if (!posts)return
+  HomeView.renderPostList(posts)
+
+    document.querySelectorAll(".post-card").forEach((card) => {
+    ReactionController.loadCountsForPost(card.dataset.postId);
+  });
+  
+}
+
+
+
+
+export async function loadsavedposts() {
+  const posts = await PostModel.getSavedPosts();
+  if (!posts)return
+  HomeView.renderPostList(posts)
+
+    document.querySelectorAll(".post-card").forEach((card) => {
+    ReactionController.loadCountsForPost(card.dataset.postId);
+  });
+  
+}
+
 //  Create Post 
 
 export async function handleCreatePost() {
@@ -54,6 +81,6 @@ export async function handleCreatePost() {
       HomeView.hideCreatePostModal();
     }
   } catch (err) {
-    console.error("Error creating post:", err);
+    alert("Error creating post:", err);
   }
 }

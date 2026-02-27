@@ -71,3 +71,63 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
+
+// GetLikedPosts handles GET /liked-posts
+func (h *PostHandler) GetLikedPosts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	cookie, err := r.Cookie("session")
+	if err != nil || cookie.Value == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	posts, err := h.postService.GetLikedPosts(userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(posts)
+}
+
+func (h *PostHandler) GetsavedPosts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	cookie, err := r.Cookie("session")
+	if err != nil || cookie.Value == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	posts, err := h.postService.GetsavedPosts(userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(posts)
+}

@@ -23,7 +23,11 @@ export function buildHomePage() {
   createPostModal.id = "creatpostid";
   createPostModal.innerHTML = templates.creatpostdiv;
 
-  container.append(sidebar, mainContent, rightSidebar, createPostModal);
+  const Mobilenav = document.createElement("div");
+  Mobilenav.className ="mobile-nav";
+  Mobilenav.innerHTML = templates.mobilenav;
+
+  container.append(sidebar, mainContent,Mobilenav ,rightSidebar, createPostModal);
 
   const bg = document.createElement("img");
   bg.className = "background";
@@ -179,6 +183,8 @@ export function renderPostList(posts) {
   const container = document.getElementById("posts-container");
   container.classList.add("posts-grid")
   container.innerHTML = "";
+  console.log(container);
+  
   posts.forEach((post) => container.appendChild(buildPostCard(post)));
 }
 

@@ -41,6 +41,9 @@ func Routing() {
 	http.HandleFunc("/", handlers.Showhome)
 	http.HandleFunc("/addpost", postHandler.AddPost)
 	http.HandleFunc("/posts", postHandler.GetPosts)
+	http.HandleFunc("/liked-posts",postHandler.GetLikedPosts)
+	http.HandleFunc("/saved-posts",postHandler.GetsavedPosts)
+
 
 	log.Println("Server running at http://localhost:8081")
 	log.Fatal(http.ListenAndServe(":8081", nil))

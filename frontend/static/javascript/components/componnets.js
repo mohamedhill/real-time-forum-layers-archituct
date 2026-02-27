@@ -10,27 +10,27 @@ export const sidebar = `
 
       </div>
     <nav class="nav">
-  <button class="nav-item active">
+  <button class="nav-item active"data-route="/">
     <i class="ri-home-5-line"></i>
     <span>Home</span>
   </button>
 
-  <button class="nav-item">
-    <i class="ri-compass-3-line"></i>
-    <span>Explore</span>
+  <button class="nav-item" data-route="/saved">
+   <i class="ri-bookmark-line"></i>
+  <span>Saved Posts</span>
   </button>
 
-  <button class="nav-item">
+  <button class="nav-item" data-route="/notify">
     <i class="ri-notification-3-line"></i>
     <span>Notifications</span>
   </button>
 
-  <button class="nav-item messagesBtn">
+  <button class="nav-item messagesBtn" id="rightmsg" data-route="/messages">
     <i class="ri-message-3-line"></i>
     <span>Messages</span>
   </button>
 
-  <button class="nav-item">
+  <button class="nav-item" data-route="/likedpost">
     <i class="ri-heart-3-line"></i>
     <span>Liked Posts</span>
   </button>
@@ -86,35 +86,36 @@ export const mainContent = `
         </div>
       <div id="posts-container" class="posts-grid-layout posts-grid" ></div>
       </div>
-      <div class="mobile-nav">
-  <nav class="nav-bar-bottum">
-  <button class="nav-bottum active">
+      
+    `
+export const mobilenav = `
+  <nav class="nav-bar-bottum" >
+  <button class="nav-bottum " data-route="/"">
     <i class="ri-home-5-line"></i>
     <span>Home</span>
   </button>
 
-  <button class="nav-bottum">
-    <i class="ri-compass-3-line"></i>
-    <span>Explore</span>
-  </button>
-
-  <button class="nav-bottum">
+<button class="nav-bottum" data-route="/saved">
+  <i class="ri-bookmark-line"></i>
+  <span>Saved Posts</span>
+</button>
+  <button class="nav-bottum" data-route="/notify">
     <i class="ri-notification-3-line"></i>
     <span>Notifications</span>
   </button>
 
-  <button class="nav-bottum messagesBtn">
+  <button class="nav-bottum messagesBtn" id="buttommsg" data-route="/messages">
     <i class="ri-message-3-line"></i>
     <span>Messages</span>
   </button>
 
-  <button class="nav-bottum">
+  <button class="nav-bottum" data-route="/likedpost">
     <i class="ri-heart-3-line"></i>
     <span>Liked Posts</span>
   </button>
 </nav>
-</div>
-    `
+`
+
 
    export const rightSidebar = `
           <div class="sidebar-section">
@@ -183,3 +184,85 @@ export const mainContent = `
           </div>
         </div>
       `
+
+
+
+      export const chatstatic = `<div class="phone">
+
+
+  <div class="content-chat">
+
+    <!-- Search -->
+    <div class="search-bar-chat">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <span>Search ...</span>
+    </div>
+
+    <!-- Online Users -->
+    <div class="section-header">
+      <div class="section-title">
+        <span class="live-dot"></span>
+        Online Users
+      </div>
+    </div>
+
+    <div class="online-users-wrapper">
+      <button class="scroll-btn" id="scrollLeft">&#8249;</button>
+      <div class="pinned-list" id="onlineList">
+        <div class="pinned-item">
+          <div class="pinned-avatar">
+            <div class="avatar-placeholder">A</div>
+            <div class="online-dot"></div>
+          </div>
+          <span class="pinned-name">Ahmad</span>
+        </div>
+        <div class="pinned-item">
+          <div class="pinned-avatar">
+            <div class="avatar-placeholder">Z</div>
+            <div class="online-dot"></div>
+          </div>
+          <span class="pinned-name">Zain</span>
+        </div>
+      </div>
+      <button class="scroll-btn" id="scrollRight">&#8250;</button>
+    </div>
+
+    <!-- Chat List -->
+
+    
+
+    <div class="chat-list">
+
+      <div class="chat-item">
+        <div class="chat-avatar">
+          <div class="avatar-placeholder" ;">R</div>
+          <div class="status"></div>
+        </div>
+        <div class="chat-info">
+          <div class="chat-name">Rader Miler</div>
+          <div class="chat-preview">Oh.. thank you so much..</div>
+        </div>
+        <div class="chat-meta">
+          <span class="chat-time">07:00 AM</span>
+        </div>
+      </div>
+
+      <div class="chat-item">
+        <div class="chat-avatar">
+          <div class="avatar-placeholder";">M</div>
+          <div class="status"></div>
+        </div>
+        <div class="chat-info">
+          <div class="chat-name">Mitdhal Marse</div>
+          <div class="chat-preview">Hi, Good Afternoon</div>
+        </div>
+        <div class="chat-meta">
+          <span class="chat-time">06:00 PM</span>
+          <div class="badge">2</div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+</div>`

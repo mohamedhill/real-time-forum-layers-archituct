@@ -17,9 +17,7 @@ export async function loadPosts() {
 
 export async function loadlikedposts() {
   const posts = await PostModel.getLikedPosts();
-  console.log(posts);
-  
-  if (!posts)return
+
   HomeView.renderPostList(posts)
 
     document.querySelectorAll(".post-card").forEach((card) => {
@@ -33,7 +31,6 @@ export async function loadlikedposts() {
 
 export async function loadsavedposts() {
   const posts = await PostModel.getSavedPosts();
-  if (!posts)return
   HomeView.renderPostList(posts)
 
     document.querySelectorAll(".post-card").forEach((card) => {

@@ -183,7 +183,7 @@ export function renderPostList(posts) {
   const container = document.getElementById("posts-container");
   container.classList.add("posts-grid")
   container.innerHTML = "";
-  console.log(container);
+  if (!posts)return
   
   posts.forEach((post) => container.appendChild(buildPostCard(post)));
 }

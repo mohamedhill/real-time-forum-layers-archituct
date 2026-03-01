@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"forum/backend/service"
@@ -27,7 +28,7 @@ func (h *CheckSessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	exists, expired, err := h.sessionService.ValidateSession(cookie.Value)
+	exists, expired, nickname, err := h.sessionService.ValidateSession(cookie.Value)
 	if err != nil || !exists {
 		writeError(w, http.StatusUnauthorized, "invalid session")
 		return
@@ -37,5 +38,8 @@ func (h *CheckSessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusOK, `{"message":"session valid"}`)
+	nicknameJSON, _ := json.Marshal(nickname)
+
+	body := `{"message":"session valid","nickname":` + string(nicknameJSON) + `}`
+	writeJSON(w, http.StatusOK, body)
 }

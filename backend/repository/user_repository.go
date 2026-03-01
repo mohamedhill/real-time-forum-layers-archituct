@@ -118,3 +118,17 @@ func (r *UserRepository) GetSessionExpiry(token string) (time.Time, error) {
 	).Scan(&expiry)
 	return expiry, err
 }
+
+
+func (r *UserRepository) GetNicknameBySession(token string) (string, error) {
+	var nickname string
+	err := db.DataBase.QueryRow(
+		`SELECT nickname FROM users WHERE session = ?`, token,
+	).Scan(&nickname)
+
+	if err != nil {
+		return "", err
+	}
+
+	return nickname, nil
+}

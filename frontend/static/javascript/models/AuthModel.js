@@ -29,5 +29,11 @@ export async function logout() {
 
 export async function checkSession() {
   const res = await fetch("/check-session", { credentials: "include" });
-  return res.status; // 200 = authenticated, 401 = not
+
+  if (!res.ok) {
+    return { status: res.status };
+  }
+
+  const data = await res.json(); 
+  return { status: res.status, data };
 }

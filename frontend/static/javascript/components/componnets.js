@@ -57,12 +57,18 @@ export const mainContent = `
 <i class="ri-search-line"></i>
 <input type="text" class="search-input" placeholder="Search">
 </div>
-  <button id="showloginbtn" class="showloginbtn">
-    <i class="ri-logout-box-r-line"></i>
-    <span>Logout</span>
-  </button>
+ 
 
+ <div class="custom-profile-wrapper" id="customProfileWrapper">
+  <div class="custom-avatar-trigger" id="nicknameuser">A</div>
 
+  <div class="custom-dropdown-content">
+    <button id="showloginbtn" class="custom-logout-action">
+      <i class="ri-logout-box-r-line"></i>
+      <span>Logout</span>
+    </button>
+  </div>
+</div>
       
       
 

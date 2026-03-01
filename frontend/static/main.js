@@ -51,3 +51,5 @@ document.body.addEventListener("submit", (e) => {
     PostController.handleCreatePost();
   }
 });
+
+

@@ -11,6 +11,15 @@ rightSidebar.classList.remove('visible')
   // Posts
   PostController.loadPosts();
 
+  //set nick name in the profile sidebar
+
+  const nicknameTrigger = document.getElementById("nicknameuser");
+  if (nicknameTrigger) {
+    nicknameTrigger.textContent = window.currentUser
+      ? window.currentUser.charAt(0).toUpperCase()
+      : "A";
+  }
+
   // Theme
   const savedTheme = localStorage.getItem("theme") || "light";
   HomeView.applyTheme(savedTheme);
@@ -30,6 +39,27 @@ rightSidebar.classList.remove('visible')
     });
   }
 
+
+  const profileWrapper = document.getElementById('customProfileWrapper');
+
+  if (profileWrapper) {
+    // Using event delegation to avoid duplicate listeners
+    profileWrapper.onclick = (event) => {
+      event.stopPropagation(); 
+      profileWrapper.classList.toggle('is-open');
+    };
+  }
+
+  // Close dropdown when clicking anywhere else (only add once per session)
+  if (!window.profileDropdownCloser) {
+    window.profileDropdownCloser = () => {
+      const wrapper = document.getElementById('customProfileWrapper');
+      if (wrapper && wrapper.classList.contains('is-open')) {
+        wrapper.classList.remove('is-open');
+      }
+    };
+    document.addEventListener('click', window.profileDropdownCloser);
+  }
   // Messages sidebar toggle
 /*   const messagesBtn = Array.from(document.getElementsByClassName("messagesBtn"));
 
@@ -63,7 +93,7 @@ rightSidebar.classList.remove('visible')
  */
 
     navigate.initNavigation()
-
+  
 
 
 

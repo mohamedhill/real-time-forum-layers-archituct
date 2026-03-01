@@ -2,6 +2,9 @@ import * as AuthModel from "../models/AuthModel.js";
 import * as AuthView from "../views/AuthView.js";
 import { Checkvalid } from "../helpers/checkvalidityinfo.js";
 
+
+
+
 //  Navigation helper 
 
 let _isNavigating = false;
@@ -16,19 +19,26 @@ function safeNavigate(path) {
 //  Route guard 
 
 export async function guardRoute(onGranted, routeType) {
- 
-  
   try {
-    const status = await AuthModel.checkSession();
+    const result = await AuthModel.checkSession();
 
-    if (routeType === "home" && status === 401) {
+    if (routeType === "home" && result.status === 401) {
       safeNavigate("/login");
       return;
     }
-    if (routeType === "auth" && status === 200) {
+
+    if (routeType === "auth" && result.status === 200) {
       safeNavigate("/");
       return;
     }
+
+    if (result.status === 200 && result.data) {
+      const nickName = result.data.nickname;
+      window.currentUser = nickName;
+      console.log(nickName);
+      
+    }
+
     onGranted();
   } catch {
     if (routeType === "home") safeNavigate("/login");

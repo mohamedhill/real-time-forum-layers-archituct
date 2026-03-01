@@ -9,6 +9,7 @@ import * as liked from "./javascript/controllers/LikedController.js"
 import * as saved from "./javascript/controllers/SavedController.js"
 
 
+//kayn mochkil event duplicate i will be fixed in the next commit
 
 
 

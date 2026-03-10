@@ -20,10 +20,6 @@ export const sidebar = `
   <span>Saved Posts</span>
   </button>
 
-  <button class="nav-item" data-route="/notify">
-    <i class="ri-notification-3-line"></i>
-    <span>Notifications</span>
-  </button>
 
   <button class="nav-item messagesBtn" id="rightmsg" data-route="/messages">
     <i class="ri-message-3-line"></i>
@@ -44,7 +40,6 @@ export const sidebar = `
     `
 
 
-
 export const mainContent = `
       <div class="header">
       <span class="theme">
@@ -58,6 +53,10 @@ export const mainContent = `
 <input type="text" class="search-input" placeholder="Search">
 </div>
  
+ <button class="notification-header-btn" id="notificationBtn" data-route="/notify">
+    <i class="ri-notification-3-line"></i>
+    <span class="notification-dot"></span>
+ </button>
 
  <div class="custom-profile-wrapper" id="customProfileWrapper">
   <div class="custom-avatar-trigger" id="nicknameuser">A</div>
@@ -94,6 +93,9 @@ export const mainContent = `
       </div>
       
     `
+
+
+
 export const mobilenav = `
   <nav class="nav-bar-bottum" >
   <button class="nav-bottum " data-route="/"">

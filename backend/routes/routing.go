@@ -29,6 +29,7 @@ func Routing() {
 	logoutHandler := handlers.NewLogoutHandler(authService)
 	checkSessionHandler := handlers.NewCheckSessionHandler(sessionService)
 	postHandler := handlers.NewPostHandler(postService, sessionService)
+	chatHandler := handlers.NewChatHandler(sessionService)
 
 	// Routes
 	http.HandleFunc("/react", reactionHandler.React)
@@ -43,6 +44,7 @@ func Routing() {
 	http.HandleFunc("/posts", postHandler.GetPosts)
 	http.HandleFunc("/liked-posts",postHandler.GetLikedPosts)
 	http.HandleFunc("/saved-posts",postHandler.GetsavedPosts)
+	http.HandleFunc("/ws/messages", chatHandler.ServeWS)
 
 
 	log.Println("Server running at http://localhost:8081")

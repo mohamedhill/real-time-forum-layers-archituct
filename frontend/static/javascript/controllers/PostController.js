@@ -1,6 +1,7 @@
 import * as PostModel from "../models/PostModel.js";
 import * as HomeView from "../views/HomeView.js";
 import * as ReactionController from "./ReactionController.js";
+import * as CommentController from "./CommentController.js";
 
 //  Load Posts 
 
@@ -13,6 +14,10 @@ export async function loadPosts() {
   document.querySelectorAll(".post-card").forEach((card) => {
     ReactionController.loadCountsForPost(card.dataset.postId);
   });
+  
+  // Load comment counts and setup comment listeners
+  setupCommentListeners();
+  CommentController.loadCommentCountsForAllPosts();
 }
 
 export async function loadlikedposts() {
@@ -24,6 +29,9 @@ export async function loadlikedposts() {
     ReactionController.loadCountsForPost(card.dataset.postId);
   });
   
+  // Load comment counts and setup comment listeners
+  setupCommentListeners();
+  CommentController.loadCommentCountsForAllPosts();
 }
 
 
@@ -37,6 +45,9 @@ export async function loadsavedposts() {
     ReactionController.loadCountsForPost(card.dataset.postId);
   });
   
+  // Load comment counts and setup comment listeners
+  setupCommentListeners();
+  CommentController.loadCommentCountsForAllPosts();
 }
 
 //  Create Post 
@@ -80,4 +91,60 @@ export async function handleCreatePost() {
   } catch (err) {
     alert("Error creating post:", err);
   }
+}
+
+// Setup comment event listeners for all post cards
+function setupCommentListeners() {
+  document.querySelectorAll(".post-card").forEach((card) => {
+
+    
+    
+    const commentBtn = card.querySelector('.action-btn[data-action="comment"]');
+    if (commentBtn) {
+      commentBtn.removeEventListener("click", handleCommentBtnClick);
+      commentBtn.addEventListener("click", handleCommentBtnClick);
+    }
+  });
+}
+
+function  handleCommentBtnClick(event) {
+  const postCard = event.target.closest(".post-card");
+  if (!postCard) return;
+  
+  const postId = postCard.dataset.postId;
+  CommentController.toggleCommentSection(postId);
+}
+
+// Add event listener delegation for dynamically created comment submit buttons
+export function setupCommentFormListeners() {
+  document.addEventListener("click", (event) => {
+    if (event.target.classList.contains("comment-submit-btn")) {
+      handleCommentSubmit(event);
+    }
+    
+    if (event.target.classList.contains("delete-comment-btn") || event.target.closest(".delete-comment-btn")) {
+      handleDeleteCommentClick(event);
+    }
+  });
+}
+
+function handleCommentSubmit(event) {
+  const postCard = event.target.closest(".post-card");
+  if (!postCard) return;
+  
+  const postId = postCard.dataset.postId;
+  CommentController.handleAddComment(postId);
+}
+
+function handleDeleteCommentClick(event) {
+  const commentItem = event.target.closest(".comment-item");
+  if (!commentItem) return;
+  
+  const postCard = event.target.closest(".post-card");
+  if (!postCard) return;
+  
+  const postId = postCard.dataset.postId;
+  const commentId = commentItem.dataset.commentId;
+  
+  CommentController.handleDeleteComment(postId, commentId);
 }

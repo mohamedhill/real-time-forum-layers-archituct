@@ -17,6 +17,9 @@ import * as saved from "./javascript/controllers/SavedController.js"
 // Build DOM structures once at startup so route switches are instant.
 HomeView.buildHomePage();
 
+// Setup comment form listeners (delegation for dynamically created comments)
+PostController.setupCommentFormListeners();
+
 //  Router 
 
 function pageNotFound() {

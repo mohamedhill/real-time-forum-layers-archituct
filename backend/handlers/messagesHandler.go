@@ -140,3 +140,44 @@ type outgoingChatMessage struct {
 }
 
 const websocketGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+func NewChatHandler(sessionService *service.SessionService) *ChatHandler {
+	return &ChatHandler{
+		sessionService: sessionService,
+		hub:            &chatHub{clients: make(map[int]*chatClient)},
+	}
+}
+
+func (h *ChatHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID, nickname, err := h.sessionService.GetUserFromSession(cookie.Value)
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	conn, rw, err := upgradeToWebSocket(w, r)
+	if err != nil {
+		http.Error(w, "websocket upgrade failed", http.StatusBadRequest)
+		return
+	}
+	_ = rw
+
+	client := &chatClient{
+		userID:   userID,
+		nickname: nickname,
+		conn:     conn,
+		send:     make(chan []byte, 32),
+	}
+
+	h.hub.register(client)
+	h.pushUserList()
+
+	go h.writePump(client)
+	h.readPump(client)
+}
+

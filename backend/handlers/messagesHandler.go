@@ -483,4 +483,28 @@ func readWebSocketFrame(conn net.Conn) ([]byte, byte, error) {
 
 	return payload, opcode, nil
 }
+func writeWebSocketFrame(conn net.Conn, opcode byte, payload []byte) error {
+	frame := make([]byte, 0, 10+len(payload))
+	frame = append(frame, 0x80|opcode)
+
+	payloadLen := len(payload)
+	switch {
+	case payloadLen < 126:
+		frame = append(frame, byte(payloadLen))
+	case payloadLen <= 65535:
+		frame = append(frame, 126)
+		ext := make([]byte, 2)
+		binary.BigEndian.PutUint16(ext, uint16(payloadLen))
+		frame = append(frame, ext...)
+	default:
+		frame = append(frame, 127)
+		ext := make([]byte, 8)
+		binary.BigEndian.PutUint64(ext, uint64(payloadLen))
+		frame = append(frame, ext...)
+	}
+
+	frame = append(frame, payload...)
+	_, err := conn.Write(frame)
+	return err
+}
 

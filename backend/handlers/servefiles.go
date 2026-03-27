@@ -12,7 +12,7 @@ func Showhome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := template.ParseFiles("../../frontend/index.html")
+	t, err := template.ParseFiles("frontend/index.html")
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -25,6 +25,5 @@ func Showhome(w http.ResponseWriter, r *http.Request) {
 
 // StaticHandler serves static frontend files
 func StaticHandler() http.Handler {
-	return http.StripPrefix("/static/", http.FileServer(http.Dir("../../frontend/static")))
+	return http.StripPrefix("/static/", http.FileServer(http.Dir("frontend/static")))
 }
-	

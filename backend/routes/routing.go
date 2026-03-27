@@ -29,7 +29,7 @@ func Routing() {
 	logoutHandler := handlers.NewLogoutHandler(authService)
 	checkSessionHandler := handlers.NewCheckSessionHandler(sessionService)
 	postHandler := handlers.NewPostHandler(postService, sessionService)
-	chatHandler := handlers.NewChatHandler(sessionService)
+	chatHandler := handlers.NewChatHandler()
 
 	// Routes
 	http.HandleFunc("/react", reactionHandler.React)

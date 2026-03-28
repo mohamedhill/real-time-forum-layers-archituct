@@ -96,7 +96,7 @@ export async function handleCreatePost() {
 // Setup comment event listeners for all post cards
 function setupCommentListeners() {
   document.querySelectorAll(".post-card").forEach((card) => {
-
+    
     
     
     const commentBtn = card.querySelector('.action-btn[data-action="comment"]');

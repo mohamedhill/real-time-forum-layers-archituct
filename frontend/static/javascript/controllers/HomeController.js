@@ -116,7 +116,7 @@ rightSidebar.classList.remove('visible')
 
   // Category selection in the create-post modal
   document.querySelectorAll(".category-btn").forEach((btn) => {
-    btn.addEventListener("click", () => btn.classList.add("active"));
+    btn.addEventListener("click", () => btn.classList.toggle("active"));
   });
 
   // Reaction events (delegated on posts container)

@@ -107,10 +107,7 @@ export const mobilenav = `
   <i class="ri-bookmark-line"></i>
   <span>Saved Posts</span>
 </button>
-  <button class="nav-bottum" data-route="/notify">
-    <i class="ri-notification-3-line"></i>
-    <span>Notifications</span>
-  </button>
+
 
   <button class="nav-bottum messagesBtn" id="buttommsg" data-route="/messages">
     <i class="ri-message-3-line"></i>

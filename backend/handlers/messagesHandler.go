@@ -219,25 +219,32 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	activeConnectionsMu.Unlock()
 
-	users := []map[string]interface{}{}
-	for _, id := range onlineUserIDs {
-		var username string
-		_ = db.DataBase.QueryRow("SELECT username FROM users WHERE id = ?", id).Scan(&username)
-		users = append(users, map[string]interface{}{
-			"id":       id,
-			"nickname": username,
-			"online":   true,
+	// Get all users marked as online in the database
+	rows, err := db.DataBase.Query("SELECT id, username FROM users WHERE is_online = TRUE")
+	if err == nil {
+		defer rows.Close()
+		users := []map[string]interface{}{}
+		for rows.Next() {
+			var id int
+			var username string
+			if err := rows.Scan(&id, &username); err == nil {
+				users = append(users, map[string]interface{}{
+					"id":       id,
+					"nickname": username,
+					"online":   true,
+				})
+			}
+		}
+
+		_ = conn.WriteJSON(map[string]interface{}{
+			"type": "users",
+			"data": map[string]interface{}{
+				"currentUserId": userID,
+				"users":         users,
+			},
+			"time": time.Now().Format(time.RFC3339),
 		})
 	}
-
-	_ = conn.WriteJSON(map[string]interface{}{
-		"type": "users",
-		"data": map[string]interface{}{
-			"currentUserId": userID,
-			"users":         users,
-		},
-		"time": time.Now().Format(time.RFC3339),
-	})
 
 	handleUserMessages(userID, conn, db.DataBase)
 }

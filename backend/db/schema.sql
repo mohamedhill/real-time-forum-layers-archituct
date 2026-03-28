@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     lastname TEXT NOT NULL,
     session TEXT DEFAULT NULL,
     dateexpired DATETIME DEFAULT NULL,
+    is_online BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

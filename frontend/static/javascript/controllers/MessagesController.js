@@ -9,6 +9,10 @@ const state = {
   messages: new Map(),
 }
 
+export function initializeOnlineUsers() {
+  connectMessagesSocket()
+}
+
 export function ShowMessagesPage() {
   const rightSidebar = document.getElementsByClassName("right-sidebar")[0]
   if (!rightSidebar) {
@@ -58,7 +62,10 @@ function connectMessagesSocket() {
       state.currentUserId = payload.data?.currentUserId ?? state.currentUserId
       state.users = payload.data?.users || []
       renderUsers()
-      ensureSelectedUser()
+      const chatList = document.getElementById("chatList")
+      if (chatList) {
+        ensureSelectedUser()
+      }
       return
     }
 
@@ -75,7 +82,11 @@ function connectMessagesSocket() {
         state.users.push({ id, nickname: username || `User ${id}`, online: true })
       }
       renderUsers()
-      ensureSelectedUser()
+      // Only update selected user if we're in messages page
+      const chatList = document.getElementById("chatList")
+      if (chatList) {
+        ensureSelectedUser()
+      }
       return
     }
 
@@ -121,19 +132,24 @@ function storeMessage(message) {
 }
 
 function renderUsers() {
-  const onlineList = document.getElementById("onlineList")
+  const sidebarOnlineList = document.getElementById("sidebarOnlineList")
   const chatList = document.getElementById("chatList")
-  if (!onlineList || !chatList) return
+  
+  if (!chatList && !sidebarOnlineList) return
 
   const onlineUsers = state.users.filter((user) => user.online)
 
-  onlineList.innerHTML = onlineUsers.length
-    ? onlineUsers.map(renderOnlineUserCard).join("")
-    : `<div class="chat-empty-mini">No users online</div>`
+  if (sidebarOnlineList) {
+    sidebarOnlineList.innerHTML = onlineUsers.length
+      ? onlineUsers.map(renderOnlineUserCard).join("")
+      : `<div class="chat-empty-mini">No users online</div>`
+  }
 
-  chatList.innerHTML = state.users.length
-    ? state.users.map(renderChatListItem).join("")
-    : `<div class="chat-empty">No other users found yet.</div>`
+  if (chatList) {
+    chatList.innerHTML = state.users.length
+      ? state.users.map(renderChatListItem).join("")
+      : `<div class="chat-empty">No other users found yet.</div>`
+  }
 
   document.querySelectorAll("[data-user-id]").forEach((node) => {
     node.addEventListener("click", () => {
@@ -291,17 +307,6 @@ function messageLayout() {
         <div class="messages-sidebar-panel">
           <div class="search-bar-chat">
             <span>Users</span>
-          </div>
-
-          <div class="section-header">
-            <div class="section-title">
-              <span class="live-dot"></span>
-              Online Users
-            </div>
-          </div>
-
-          <div class="online-users-wrapper no-scroll-buttons">
-            <div class="pinned-list" id="onlineList"></div>
           </div>
 
           <div class="chat-list" id="chatList"></div>

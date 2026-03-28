@@ -3,6 +3,7 @@ import * as PostController from "./PostController.js";
 import * as ReactionController from "./ReactionController.js";
 import * as AuthController from "./AuthController.js";
 import * as navigate from "../navigation/Navigation.js"
+import * as MessagesController from "./MessagesController.js"
 
 export function showHomePage() {
   const { rightSidebar } = HomeView.renderHomePage();
@@ -10,6 +11,9 @@ navigate.setActiveNav("/")
 rightSidebar.classList.remove('visible')
   // Posts
   PostController.loadPosts();
+
+  // Initialize online users display in sidebar
+  MessagesController.initializeOnlineUsers();
 
   //set nick name in the profile sidebar
 

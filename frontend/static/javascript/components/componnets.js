@@ -32,6 +32,18 @@ export const sidebar = `
   </button>
 </nav>
 
+<div class="online-users-section">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="live-dot"></span>
+      Online Users
+    </div>
+  </div>
+  <div class="online-users-wrapper no-scroll-buttons">
+    <div class="pinned-list" id="sidebarOnlineList"></div>
+  </div>
+</div>
+
 <button id="creat-post-btn" class="create-post-btn">
   <i class="ri-add-circle-line"></i>
   <span>Create Post</span>

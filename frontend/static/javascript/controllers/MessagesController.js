@@ -62,8 +62,34 @@ function connectMessagesSocket() {
       return
     }
 
+    // handle presence updates from server
+    if (payload.type === "online") {
+      const id = payload.userId || payload.data?.userId
+      const username = payload.username || payload.data?.username
+      if (id == null) return
+      const existing = state.users.find(u => u.id === id)
+      if (existing) {
+        existing.online = true
+        if (username) existing.nickname = username
+      } else {
+        state.users.push({ id, nickname: username || `User ${id}`, online: true })
+      }
+      renderUsers()
+      ensureSelectedUser()
+      return
+    }
+
+    if (payload.type === "offline") {
+      const id = payload.userId || payload.data?.userId
+      if (id == null) return
+      const existing = state.users.find(u => u.id === id)
+      if (existing) existing.online = false
+      renderUsers()
+      return
+    }
+
     if (payload.type === "message") {
-      const message = payload.data
+      const message = payload.data || payload
       storeMessage(message)
       renderUsers()
 
@@ -227,8 +253,8 @@ function sendMessage() {
 
   socket.send(JSON.stringify({
     type: "message",
-    to: selectedUser.id,
-    text,
+    receiver: selectedUser.id,
+    message: text,
   }))
 
   input.value = ""

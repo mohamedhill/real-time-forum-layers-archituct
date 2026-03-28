@@ -21,6 +21,13 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	w.Write([]byte(fmt.Sprintf(`{"error":%q}`, message)))
 }
 
+// ResponseJSON writes an arbitrary object as JSON with the given status code
+func ResponseJSON(w http.ResponseWriter, status int, body interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
 // decodeJSON decodes request body into target struct
 func decodeJSON(r *http.Request, target interface{}) error {
 	dec := json.NewDecoder(r.Body)

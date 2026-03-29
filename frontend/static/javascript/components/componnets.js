@@ -65,10 +65,13 @@ export const mainContent = `
 <input type="text" class="search-input" placeholder="Search">
 </div>
  
- <button class="notification-header-btn" id="notificationBtn" data-route="/notify">
-    <i class="ri-notification-3-line"></i>
-    <span class="notification-dot"></span>
- </button>
+ <div class="notification-wrapper" id="notificationWrapper">
+   <button class="notification-header-btn" id="notificationBtn" type="button" aria-label="Notifications">
+      <i class="ri-notification-3-line"></i>
+      <span class="notification-dot"></span>
+   </button>
+   <div class="notification-panel" id="notificationPanel"></div>
+ </div>
 
  <div class="custom-profile-wrapper" id="customProfileWrapper">
   <div class="custom-avatar-trigger" id="nicknameuser">A</div>

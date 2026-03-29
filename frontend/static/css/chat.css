@@ -285,6 +285,13 @@
   background: #e5e7eb;
 }
 
+.message-author {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
 .message-row.mine .message-bubble {
   background: #4f46e5;
   color: white;

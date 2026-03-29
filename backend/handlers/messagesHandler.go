@@ -54,7 +54,6 @@ func removeConnection(userID int, conn *websocket.Conn) {
 			break
 		}
 	}
-
 	if len(activeConnections[userID]) == 0 {
 		delete(activeConnections, userID)
 		delete(usernames, userID)

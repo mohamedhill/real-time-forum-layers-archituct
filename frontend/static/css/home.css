@@ -1093,10 +1093,9 @@ flex-wrap: wrap;
   background-color: #6366f1;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
-
-
-
-
+.notification-wrapper {
+  position: relative;
+}
 
 .notification-header-btn {
   position: relative;
@@ -1132,6 +1131,51 @@ flex-wrap: wrap;
 
 .notification-header-btn.has-unread .notification-dot {
   display: block;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 280px;
+  max-width: min(280px, 80vw);
+  display: none;
+  background: var(--body-color);
+  border: 1px solid var(--border-muted);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  z-index: 20;
+}
+
+.notification-wrapper.is-open .notification-panel {
+  display: block;
+}
+
+.notification-item {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  color: var(--text-dark);
+}
+
+.notification-item:hover {
+  background: #b1c8ff33;
+}
+
+.notification-item-text,
+.notification-empty {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification-empty {
+  padding: 12px;
+  color: var(--muted);
 }
 
 #dark.active ~ .notification-header-btn:hover {

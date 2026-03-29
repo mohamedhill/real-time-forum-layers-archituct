@@ -13,6 +13,7 @@ const state = {
 
 export function initializeOnlineUsers() {
   updateNotificationState()
+  bindNotificationEvents()
   connectMessagesSocket()
 }
 
@@ -132,7 +133,7 @@ function storeMessage(message) {
 function renderUsers() {
   const sidebarOnlineList = document.getElementById("sidebarOnlineList")
   const chatList = document.getElementById("chatList")
-  const chatUsers = getChatUsers()
+  const chatUsers = getSortedChatUsers()
   
   if (!chatList && !sidebarOnlineList) return
   const onlineUsers = chatUsers.filter((user) => user.online)
@@ -198,7 +199,7 @@ function renderChatListItem(user) {
 }
 
 function ensureSelectedUser() {
-  const chatUsers = getChatUsers()
+  const chatUsers = getSortedChatUsers()
 
   if (pendingSelectedUserId != null) {
     selectedUser = chatUsers.find((user) => user.id === pendingSelectedUserId) || selectedUser
@@ -253,9 +254,11 @@ function renderMessages() {
   const currentId = state.currentUserId
   messagesBox.innerHTML = history.map((message) => {
     const own = message.from === currentId
+    const author = own ? "You" : (message.senderNickname || selectedUser.nickname)
     return `
       <div class="message-row ${own ? "mine" : "theirs"}">
         <div class="message-bubble">
+          <div class="message-author">${escapeHtml(author)}</div>
           <div class="message-text">${escapeHtml(message.text)}</div>
           <div class="message-time">${escapeHtml(formatTime(message.timestamp))}</div>
         </div>
@@ -289,7 +292,11 @@ function firstLetter(value = "?") {
 function formatTime(value) {
   if (!value) return ""
   const date = new Date(value)
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  })
 }
 
 function parseUserId(value) {
@@ -311,14 +318,82 @@ function clearUnreadMessages(userId = null) {
 }
 
 function updateNotificationState() {
+  const notificationWrapper = document.getElementById("notificationWrapper")
   const notificationBtn = document.getElementById("notificationBtn")
+  const notificationPanel = document.getElementById("notificationPanel")
   const notificationDot = notificationBtn?.querySelector(".notification-dot")
-  if (!notificationBtn || !notificationDot) return
+  if (!notificationWrapper || !notificationBtn || !notificationDot || !notificationPanel) return
   notificationBtn.classList.toggle("has-unread", unreadUserIds.size > 0)
+  notificationWrapper.classList.toggle("has-unread", unreadUserIds.size > 0)
+  notificationPanel.innerHTML = renderNotificationItems()
+
+  notificationPanel.querySelectorAll("[data-notification-user-id]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const userId = parseUserId(node.dataset.notificationUserId)
+      if (userId == null) return
+      clearUnreadMessages(userId)
+      notificationWrapper.classList.remove("is-open")
+      navigation.navigate(`/messages?user=${userId}`)
+    })
+  })
+}
+
+function bindNotificationEvents() {
+  const notificationWrapper = document.getElementById("notificationWrapper")
+  const notificationBtn = document.getElementById("notificationBtn")
+  if (!notificationWrapper || !notificationBtn || notificationBtn.dataset.bound === "true") return
+
+  notificationBtn.dataset.bound = "true"
+  notificationBtn.addEventListener("click", (event) => {
+    event.stopPropagation()
+    notificationWrapper.classList.toggle("is-open")
+    updateNotificationState()
+  })
+
+  if (!window.notificationPanelCloser) {
+    window.notificationPanelCloser = (event) => {
+      const wrapper = document.getElementById("notificationWrapper")
+      if (!wrapper) return
+      if (event && wrapper.contains(event.target)) return
+      wrapper.classList.remove("is-open")
+    }
+    document.addEventListener("click", window.notificationPanelCloser)
+  }
+}
+
+function renderNotificationItems() {
+  const unreadUsers = Array.from(unreadUserIds)
+    .map((userId) => state.users.find((user) => user.id === userId))
+    .filter(Boolean)
+
+  if (!unreadUsers.length) {
+    return `<div class="notification-empty">No new messages</div>`
+  }
+
+  return unreadUsers.map((user) => `
+    <button class="notification-item" type="button" data-notification-user-id="${user.id}">
+      <span class="notification-item-text">You got a new message from ${escapeHtml(user.nickname)}</span>
+    </button>
+  `).join("")
 }
 
 function getChatUsers() {
   return state.users.filter((user) => user.id !== state.currentUserId)
+}
+
+function getSortedChatUsers() {
+  return [...getChatUsers()].sort((firstUser, secondUser) => {
+    const firstTime = getLastMessageTime(firstUser.id)
+    const secondTime = getLastMessageTime(secondUser.id)
+    return secondTime - firstTime
+  })
+}
+
+function getLastMessageTime(userId) {
+  const history = state.messages.get(userId) || []
+  const lastMessage = history[history.length - 1]
+  if (!lastMessage?.timestamp) return 0
+  return new Date(lastMessage.timestamp).getTime() || 0
 }
 
 function normalizeUser(user) {
@@ -371,7 +446,6 @@ function messageLayout() {
               <div class="chat-name" id="chattingWith">Select a user</div>
               <div class="chat-preview" id="chattingStatus"></div>
             </div>
-            <span class="chat-connection-state" id="chatConnectionState">Connecting...</span>
           </div>
 
           <div class="messages-box" id="chatMessages">

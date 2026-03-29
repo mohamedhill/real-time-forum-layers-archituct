@@ -48,10 +48,6 @@ export const mainContent = `
 
   </span>
 
-  <div class="search-bar">
-<i class="ri-search-line"></i>
-<input type="text" class="search-input" placeholder="Search">
-</div>
  
  <button class="notification-header-btn" id="notificationBtn" data-route="/notify">
     <i class="ri-notification-3-line"></i>

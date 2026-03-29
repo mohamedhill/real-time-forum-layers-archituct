@@ -3,17 +3,13 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"html"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
-
 	db "forum/backend/database"
 
 	"github.com/gorilla/websocket"
 )
-
 var wsUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
@@ -21,36 +17,30 @@ type SafeConn struct {
 	Conn *websocket.Conn
 	Mu   sync.Mutex
 }
-
 func (s *SafeConn) WriteJSON(v interface{}) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 	return s.Conn.WriteJSON(v)
 }
-
 var (
 	activeConnections   = make(map[int][]*SafeConn)
-	usernames           = make(map[int]string) 
+	usernames           = make(map[int]string)
 	activeConnectionsMu sync.RWMutex
 )
-
-func addConnection(userID int, username string, conn *websocket.Conn) {
+func addConnection(userID int, nickname string, conn *websocket.Conn) {
 	activeConnectionsMu.Lock()
 	defer activeConnectionsMu.Unlock()
 
 	sc := &SafeConn{Conn: conn}
 	activeConnections[userID] = append(activeConnections[userID], sc)
-	usernames[userID] = username
+	usernames[userID] = nickname
 }
 
 func removeConnection(userID int, conn *websocket.Conn) {
 	activeConnectionsMu.Lock()
 	defer activeConnectionsMu.Unlock()
 
-	conns, exists := activeConnections[userID]
-	if !exists {
-		return
-	}
+	conns := activeConnections[userID]
 
 	for i, c := range conns {
 		if c.Conn == conn {
@@ -58,14 +48,16 @@ func removeConnection(userID int, conn *websocket.Conn) {
 			break
 		}
 	}
+
 	if len(activeConnections[userID]) == 0 {
 		delete(activeConnections, userID)
 		delete(usernames, userID)
+
 		db.DataBase.Exec("UPDATE users SET is_online = FALSE WHERE id = ?", userID)
+
 		go broadcastToAll(map[string]interface{}{
-			"type":   "offline",
-			"userId": userID,
-			"time":   time.Now().Format(time.RFC3339),
+			"type": "offline",
+			"id":   userID,
 		})
 	}
 }
@@ -85,13 +77,13 @@ func sendToSingleUser(userID int, payload map[string]interface{}) {
 
 func broadcastToAll(payload map[string]interface{}) {
 	activeConnectionsMu.RLock()
-	allConns := []*SafeConn{}
+	all := []*SafeConn{}
 	for _, conns := range activeConnections {
-		allConns = append(allConns, conns...)
+		all = append(all, conns...)
 	}
 	activeConnectionsMu.RUnlock()
 
-	for _, conn := range allConns {
+	for _, conn := range all {
 		_ = conn.WriteJSON(payload)
 	}
 }
@@ -101,11 +93,7 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 		removeConnection(userID, conn)
 		conn.Close()
 	}()
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
-	})
+
 	for {
 		_, msgBytes, err := conn.ReadMessage()
 		if err != nil {
@@ -117,12 +105,7 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 			continue
 		}
 
-		msgType, ok := msg["type"].(string)
-		if !ok {
-			continue
-		}
-
-		switch msgType {
+		switch msg["type"] {
 
 		case "message":
 			receiverID, ok := parseInt(msg["receiver"])
@@ -130,8 +113,8 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 				continue
 			}
 
-			messageText, ok := msg["message"].(string)
-			if !ok || len(messageText) == 0 || len(messageText) > 1000 {
+			text, ok := msg["message"].(string)
+			if !ok || text == "" {
 				continue
 			}
 
@@ -140,27 +123,27 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 
 			res, err := dbConn.Exec(
 				"INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)",
-				userID, receiverID, messageText,
+				userID, receiverID, text,
 			)
 			if err != nil {
 				continue
 			}
 
-			msgID64, _ := res.LastInsertId()
+			id64, _ := res.LastInsertId()
 
-			outMsg := map[string]interface{}{
+			out := map[string]interface{}{
 				"type":             "message",
-				"id":               int(msgID64),
+				"id":               int(id64),
 				"from":             userID,
 				"to":               receiverID,
-				"text":             messageText,
-				"timestamp":        time.Now().Format(time.RFC3339),
-				"senderUsername":   senderName,
-				"receiverUsername": receiverName,
+				"text":             text,
+				"senderNickname":   senderName,
+				"receiverNickname": receiverName,
+				"time":             time.Now(),
 			}
 
-			sendToSingleUser(receiverID, outMsg)
-			sendToSingleUser(userID, outMsg)
+			sendToSingleUser(receiverID, out)
+			sendToSingleUser(userID, out)
 
 		case "typing", "stopTyping":
 			receiverID, ok := parseInt(msg["receiver"])
@@ -169,20 +152,20 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 			}
 
 			sendToSingleUser(receiverID, map[string]interface{}{
-				"type":           msgType,
+				"type":           msg["type"],
 				"senderId":       userID,
-				"senderUsername": usernames[userID],
-				"time":           time.Now().Format(time.RFC3339),
+				"senderNickname": usernames[userID],
 			})
 		}
 	}
 }
-func parseInt(value interface{}) (int, bool) {
-	switch v := value.(type) {
+
+func parseInt(v interface{}) (int, bool) {
+	switch val := v.(type) {
 	case float64:
-		return int(v), true
+		return int(val), true
 	case int:
-		return v, true
+		return val, true
 	default:
 		return 0, false
 	}
@@ -194,22 +177,23 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	var username string
-	_ = db.DataBase.QueryRow("SELECT username FROM users WHERE id = ?", userID).Scan(&username)
+
+	var nickname string
+	db.DataBase.QueryRow("SELECT nickname FROM users WHERE id = ?", userID).Scan(&nickname)
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-	addConnection(userID, username, conn)
+
+	addConnection(userID, nickname, conn)
 
 	db.DataBase.Exec("UPDATE users SET is_online = TRUE WHERE id = ?", userID)
 
 	go broadcastToAll(map[string]interface{}{
 		"type":     "online",
-		"userId":   userID,
-		"username": username,
-		"time":     time.Now().Format(time.RFC3339),
+		"id":       userID,
+		"nickname": nickname,
 	})
 
 	activeConnectionsMu.RLock()
@@ -229,61 +213,7 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 			"currentUserId": userID,
 			"users":         users,
 		},
-		"time": time.Now().Format(time.RFC3339),
 	})
 
 	handleUserMessages(userID, conn, db.DataBase)
-}
-func FetchUserMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	receiverID, err1 := strconv.Atoi(r.URL.Query().Get("receiver"))
-	offsetID, err2 := strconv.Atoi(r.URL.Query().Get("offset"))
-
-	if err1 != nil || err2 != nil {
-		ResponseJSON(w, http.StatusBadRequest, map[string]any{
-			"message": "Invalid parameters",
-			"status":  http.StatusBadRequest,
-		})
-		return
-	}
-	senderID, err := GetUserFromSession(r, db.DataBase)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-	rows, err := db.DataBase.Query(`
-		SELECT m.id, m.sender_id, m.receiver_id, m.message, m.created_at, u.username
-		FROM messages m
-		JOIN users u ON m.sender_id = u.id
-		WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
-		ORDER BY m.id DESC
-		LIMIT 10 OFFSET ?`,
-		senderID, receiverID, receiverID, senderID, offsetID,
-	)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "DB error")
-		return
-	}
-	defer rows.Close()
-
-	msgList := []map[string]interface{}{}
-
-	for rows.Next() {
-		var id, sender, receiver int
-		var messageText, createdAt, senderUsername string
-
-		if err := rows.Scan(&id, &sender, &receiver, &messageText, &createdAt, &senderUsername); err != nil {
-			continue
-		}
-		msgList = append(msgList, map[string]interface{}{
-			"id":             id,
-			"sender":         sender,
-			"receiver":       receiver,
-			"message":        html.EscapeString(messageText),
-			"time":           createdAt,
-			"senderUsername": html.EscapeString(senderUsername),
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(msgList)
 }

@@ -40,24 +40,19 @@ function bindStaticEvents() {
     }
   })
 }
-
 function connectMessagesSocket() {
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
     socket.send(JSON.stringify({ type: "users" }))
     return
   }
-
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
   socket = new WebSocket(`${protocol}//${window.location.host}/ws/messages`)
-
   socket.addEventListener("open", () => {
     setConnectionState("Connected")
     socket.send(JSON.stringify({ type: "users" }))
   })
-
   socket.addEventListener("message", (event) => {
     const payload = JSON.parse(event.data)
-
     if (payload.type === "users") {
       state.currentUserId = payload.data?.currentUserId ?? state.currentUserId
       state.users = payload.data?.users || []
@@ -68,11 +63,9 @@ function connectMessagesSocket() {
       }
       return
     }
-
-    // handle presence updates from server
     if (payload.type === "online") {
-      const id = payload.userId || payload.data?.userId
-      const username = payload.username || payload.data?.username
+      const id = payload.userId || payload.data?.userId || payload.id || payload.data?.id
+      const username = payload.username || payload.data?.username || payload.nickname || payload.data?.nickname
       if (id == null) return
       const existing = state.users.find(u => u.id === id)
       if (existing) {
@@ -82,28 +75,24 @@ function connectMessagesSocket() {
         state.users.push({ id, nickname: username || `User ${id}`, online: true })
       }
       renderUsers()
-      // Only update selected user if we're in messages page
       const chatList = document.getElementById("chatList")
       if (chatList) {
         ensureSelectedUser()
       }
       return
     }
-
     if (payload.type === "offline") {
-      const id = payload.userId || payload.data?.userId
+      const id = payload.userId || payload.data?.userId || payload.id || payload.data?.id
       if (id == null) return
       const existing = state.users.find(u => u.id === id)
       if (existing) existing.online = false
       renderUsers()
       return
     }
-
     if (payload.type === "message") {
       const message = payload.data || payload
       storeMessage(message)
       renderUsers()
-
       if (
         message.from === selectedUser?.id ||
         message.to === selectedUser?.id
@@ -112,18 +101,14 @@ function connectMessagesSocket() {
       }
       return
     }
-
     if (payload.type === "error") {
       setConnectionState(payload.data?.message || "Chat error")
     }
   })
-
   socket.addEventListener("close", () => {
     setConnectionState("Disconnected")
   })
 }
-
-
 function storeMessage(message) {
   const partnerId = message.from === state.currentUserId ? message.to : message.from
   const existing = state.messages.get(partnerId) || []
@@ -136,19 +121,12 @@ function renderUsers() {
   const chatList = document.getElementById("chatList")
   
   if (!chatList && !sidebarOnlineList) return
-
   const onlineUsers = state.users.filter((user) => user.online)
-
   if (sidebarOnlineList) {
-    sidebarOnlineList.innerHTML = onlineUsers.length
-      ? onlineUsers.map(renderOnlineUserCard).join("")
-      : `<div class="chat-empty-mini">No users online</div>`
+    sidebarOnlineList.innerHTML = onlineUsers.length? onlineUsers.map(renderOnlineUserCard).join(""): `<div class="chat-empty-mini">No users online</div>`
   }
-
   if (chatList) {
-    chatList.innerHTML = state.users.length
-      ? state.users.map(renderChatListItem).join("")
-      : `<div class="chat-empty">No other users found yet.</div>`
+    chatList.innerHTML = state.users.length? state.users.map(renderChatListItem).join(""): `<div class="chat-empty">No other users found yet.</div>`
   }
 
   document.querySelectorAll("[data-user-id]").forEach((node) => {
@@ -223,27 +201,22 @@ function updateSelectedHeader() {
     input.disabled = true
     return
   }
-
   nameNode.textContent = selectedUser.nickname
   statusNode.textContent = selectedUser.online ? "Online" : "Offline"
   input.disabled = false
 }
-
 function renderMessages() {
   const messagesBox = document.getElementById("chatMessages")
   if (!messagesBox) return
-
   if (!selectedUser) {
     messagesBox.innerHTML = `<div class="chat-empty">Choose a user to start chatting.</div>`
     return
   }
-
   const history = state.messages.get(selectedUser.id) || []
   if (!history.length) {
     messagesBox.innerHTML = `<div class="chat-empty">No messages yet with ${escapeHtml(selectedUser.nickname)}.</div>`
     return
   }
-
   const currentId = state.currentUserId
   messagesBox.innerHTML = history.map((message) => {
     const own = message.from === currentId
@@ -256,23 +229,18 @@ function renderMessages() {
       </div>
     `
   }).join("")
-
   messagesBox.scrollTop = messagesBox.scrollHeight
 }
-
 function sendMessage() {
   const input = document.getElementById("messageInput")
   if (!input || !selectedUser || !socket || socket.readyState !== WebSocket.OPEN) return
-
   const text = input.value.trim()
   if (!text) return
-
   socket.send(JSON.stringify({
     type: "message",
     receiver: selectedUser.id,
     message: text,
   }))
-
   input.value = ""
 }
 

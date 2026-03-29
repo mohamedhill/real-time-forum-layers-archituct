@@ -292,3 +292,128 @@ const saveBtn = postCard.querySelector('.action-btn[data-action="save"]');
 }
 
 //action-btn
+
+// Comment Section UI
+
+export function buildCommentSection(postId) {
+  const commentSection = document.createElement("div");
+  commentSection.className = "comment-section";
+  commentSection.dataset.postId = postId;
+
+  const commentHeader = document.createElement("div");
+  commentHeader.className = "comment-header";
+  commentHeader.innerHTML = `<h4>Comments</h4>`;
+
+  const commentInputContainer = document.createElement("div");
+  commentInputContainer.className = "comment-input-container";
+  commentInputContainer.innerHTML = `
+    <input type="text" class="comment-input" placeholder="Add a comment...">
+    <button class="comment-submit-btn">Post</button>
+  `;
+
+  const commentsList = document.createElement("div");
+  commentsList.className = "comments-list";
+
+  commentSection.append(commentHeader, commentInputContainer, commentsList);
+  return commentSection;
+}
+
+export function renderComments(postId, comments) {
+  const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+  if (!postCard) return;
+
+  const commentsList = postCard.querySelector(".comments-list");
+  if (!commentsList) return;
+
+  commentsList.innerHTML = "";
+  if (!comments || comments.length === 0) {
+    commentsList.innerHTML = `<p class="no-comments">No comments yet</p>`;
+    return;
+  }
+
+  comments.forEach((comment) => {
+    commentsList.appendChild(buildCommentItem(postId, comment));
+  });
+}
+
+export function buildCommentItem(postId, comment) {
+  const commentDiv = document.createElement("div");
+  commentDiv.className = "comment-item";
+  commentDiv.dataset.commentId = comment.id;
+
+  const commentHeader = document.createElement("div");
+  commentHeader.className = "comment-item-header";
+
+  const avatar = document.createElement("div");
+  avatar.className = "comment-avatar";
+  avatar.textContent = comment.nickname ? comment.nickname.charAt(0).toUpperCase() : "?";
+
+  const userInfo = document.createElement("div");
+  userInfo.className = "comment-user-info";
+
+  const username = document.createElement("span");
+  username.className = "comment-username";
+  username.textContent = comment.nickname || "Unknown";
+
+  const timestamp = document.createElement("span");
+  timestamp.className = "comment-time";
+  
+  const date = new Date(comment.time);
+  const formattedTime = date.toLocaleString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    month: "short",
+    day: "numeric"
+  });
+  timestamp.textContent = formattedTime;
+
+  userInfo.append(username, timestamp);
+  commentHeader.append(avatar, userInfo);
+
+  const commentContent = document.createElement("div");
+  commentContent.className = "comment-content";
+  commentContent.textContent = comment.content;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-comment-btn";
+  deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+  deleteBtn.title = "Delete comment";
+
+  commentDiv.append(commentHeader, commentContent, deleteBtn);
+  return commentDiv;
+}
+
+export function addCommentToList(postId, comment) {
+  const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+  if (!postCard) return;
+
+  const commentsList = postCard.querySelector(".comments-list");
+  if (!commentsList) return;
+
+  // Remove "No comments" message if it exists
+  const noComments = commentsList.querySelector(".no-comments");
+  if (noComments) {
+    noComments.remove();
+  }
+
+  // Prepend new comment to the list
+  const commentItem = buildCommentItem(postId, comment);
+  commentsList.prepend(commentItem);
+}
+
+export function removeComment(postId, commentId) {
+  const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+  if (!postCard) return;
+
+  const commentItem = postCard.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+  if (commentItem) {
+    commentItem.remove();
+  }
+
+  // Check if there are any comments left
+  const commentsList = postCard.querySelector(".comments-list");
+  if (commentsList && commentsList.children.length === 0) {
+    commentsList.innerHTML = `<p class="no-comments">No comments yet</p>`;
+  }
+}

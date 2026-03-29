@@ -72,3 +72,19 @@ type ReactionState struct {
 	IsDisliked bool    `json:"isdisliked"`
 	IsSaved    bool    `json:"issaved"`
 }
+
+// Comment represents a comment on a post
+type Comment struct {
+	ID       int    `json:"id"`
+	PostID   int    `json:"postID"`
+	UserID   int    `json:"userID"`
+	Nickname string `json:"nickname"`
+	Content  string `json:"content"`
+	Time     string `json:"time"`
+}
+
+// CommentInput holds new comment form data
+type CommentInput struct {
+	PostID  int    `json:"postID"`
+	Content string `json:"content"`
+}

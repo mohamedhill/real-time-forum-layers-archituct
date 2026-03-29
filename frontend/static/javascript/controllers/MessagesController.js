@@ -2,6 +2,8 @@ import * as navigate from "../navigation/Navigation.js"
 
 let socket = null
 let selectedUser = null
+let pendingSelectedUserId = null
+const unreadUserIds = new Set()
 
 const state = {
   currentUserId: null,
@@ -10,21 +12,27 @@ const state = {
 }
 
 export function initializeOnlineUsers() {
+  updateNotificationState()
   connectMessagesSocket()
 }
 
-export function ShowMessagesPage() {
+export function ShowMessagesPage(url = new URL(window.location.href)) {
   const rightSidebar = document.getElementsByClassName("right-sidebar")[0]
   if (!rightSidebar) {
     window.location.href = "/"
     return
   }
 
+  pendingSelectedUserId = parseUserId(url.searchParams.get("user"))
+
   rightSidebar.classList.add("visible")
   navigate.setActiveNav("/messages")
   rightSidebar.innerHTML = messageLayout()
 
   bindStaticEvents()
+  renderUsers()
+  ensureSelectedUser()
+  clearUnreadMessages()
   connectMessagesSocket()
 }
 
@@ -54,8 +62,8 @@ function connectMessagesSocket() {
   socket.addEventListener("message", (event) => {
     const payload = JSON.parse(event.data)
     if (payload.type === "users") {
-      state.currentUserId = payload.data?.currentUserId ?? state.currentUserId
-      state.users = payload.data?.users || []
+      state.currentUserId = parseUserId(payload.data?.currentUserId) ?? state.currentUserId
+      state.users = (payload.data?.users || []).map(normalizeUser).filter(Boolean)
       renderUsers()
       const chatList = document.getElementById("chatList")
       if (chatList) {
@@ -64,7 +72,7 @@ function connectMessagesSocket() {
       return
     }
     if (payload.type === "online") {
-      const id = payload.userId || payload.data?.userId || payload.id || payload.data?.id
+      const id = parseUserId(payload.userId || payload.data?.userId || payload.id || payload.data?.id)
       const username = payload.username || payload.data?.username || payload.nickname || payload.data?.nickname
       if (id == null) return
       const existing = state.users.find(u => u.id === id)
@@ -82,7 +90,7 @@ function connectMessagesSocket() {
       return
     }
     if (payload.type === "offline") {
-      const id = payload.userId || payload.data?.userId || payload.id || payload.data?.id
+      const id = parseUserId(payload.userId || payload.data?.userId || payload.id || payload.data?.id)
       if (id == null) return
       const existing = state.users.find(u => u.id === id)
       if (existing) existing.online = false
@@ -90,8 +98,12 @@ function connectMessagesSocket() {
       return
     }
     if (payload.type === "message") {
-      const message = payload.data || payload
+      const message = normalizeMessage(payload.data || payload)
+      if (!message) return
       storeMessage(message)
+      if (message.from !== state.currentUserId && !isConversationOpen(message.from)) {
+        unreadUserIds.add(message.from)
+      }
       renderUsers()
       if (
         message.from === selectedUser?.id ||
@@ -99,6 +111,7 @@ function connectMessagesSocket() {
       ) {
         renderMessages()
       }
+      updateNotificationState()
       return
     }
     if (payload.type === "error") {
@@ -119,21 +132,28 @@ function storeMessage(message) {
 function renderUsers() {
   const sidebarOnlineList = document.getElementById("sidebarOnlineList")
   const chatList = document.getElementById("chatList")
+  const chatUsers = getChatUsers()
   
   if (!chatList && !sidebarOnlineList) return
-  const onlineUsers = state.users.filter((user) => user.online)
+  const onlineUsers = chatUsers.filter((user) => user.online)
   if (sidebarOnlineList) {
     sidebarOnlineList.innerHTML = onlineUsers.length? onlineUsers.map(renderOnlineUserCard).join(""): `<div class="chat-empty-mini">No users online</div>`
   }
   if (chatList) {
-    chatList.innerHTML = state.users.length? state.users.map(renderChatListItem).join(""): `<div class="chat-empty">No other users found yet.</div>`
+    chatList.innerHTML = chatUsers.length? chatUsers.map(renderChatListItem).join(""): `<div class="chat-empty">No other users found yet.</div>`
   }
 
   document.querySelectorAll("[data-user-id]").forEach((node) => {
     node.addEventListener("click", () => {
-      const user = state.users.find((item) => item.id === Number(node.dataset.userId))
+      const user = chatUsers.find((item) => item.id === Number(node.dataset.userId))
       if (!user) return
+      if (!chatList) {
+        navigation.navigate(`/messages?user=${user.id}`)
+        return
+      }
       selectedUser = user
+      pendingSelectedUserId = null
+      clearUnreadMessages(user.id)
       updateSelectedHeader()
       renderUsers()
       renderMessages()
@@ -178,10 +198,23 @@ function renderChatListItem(user) {
 }
 
 function ensureSelectedUser() {
-  if (!selectedUser && state.users.length) {
-    selectedUser = state.users[0]
+  const chatUsers = getChatUsers()
+
+  if (pendingSelectedUserId != null) {
+    selectedUser = chatUsers.find((user) => user.id === pendingSelectedUserId) || selectedUser
+    if (selectedUser?.id === pendingSelectedUserId) {
+      pendingSelectedUserId = null
+    }
+  }
+
+  if (!selectedUser && chatUsers.length) {
+    selectedUser = chatUsers[0]
   } else if (selectedUser) {
-    selectedUser = state.users.find((user) => user.id === selectedUser.id) || state.users[0] || null
+    selectedUser = chatUsers.find((user) => user.id === selectedUser.id) || chatUsers[0] || null
+  }
+
+  if (selectedUser) {
+    clearUnreadMessages(selectedUser.id)
   }
 
   updateSelectedHeader()
@@ -257,6 +290,58 @@ function formatTime(value) {
   if (!value) return ""
   const date = new Date(value)
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+}
+
+function parseUserId(value) {
+  const id = Number(value)
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+function isConversationOpen(userId) {
+  return window.location.pathname === "/messages" && selectedUser?.id === userId
+}
+
+function clearUnreadMessages(userId = null) {
+  if (userId == null) {
+    unreadUserIds.clear()
+  } else {
+    unreadUserIds.delete(userId)
+  }
+  updateNotificationState()
+}
+
+function updateNotificationState() {
+  const notificationBtn = document.getElementById("notificationBtn")
+  const notificationDot = notificationBtn?.querySelector(".notification-dot")
+  if (!notificationBtn || !notificationDot) return
+  notificationBtn.classList.toggle("has-unread", unreadUserIds.size > 0)
+}
+
+function getChatUsers() {
+  return state.users.filter((user) => user.id !== state.currentUserId)
+}
+
+function normalizeUser(user) {
+  const id = parseUserId(user?.id)
+  if (id == null) return null
+  return {
+    ...user,
+    id,
+    nickname: user?.nickname || `User ${id}`,
+    online: Boolean(user?.online),
+  }
+}
+
+function normalizeMessage(message) {
+  const from = parseUserId(message?.from)
+  const to = parseUserId(message?.to)
+  if (from == null || to == null) return null
+  return {
+    ...message,
+    from,
+    to,
+    timestamp: message?.timestamp || message?.time || null,
+  }
 }
 
 function escapeHtml(value = "") {

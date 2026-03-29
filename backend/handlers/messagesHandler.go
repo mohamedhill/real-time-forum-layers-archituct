@@ -3,37 +3,43 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	db "forum/backend/database"
 	"net/http"
 	"sync"
 	"time"
-	db "forum/backend/database"
 
 	"github.com/gorilla/websocket"
 )
+
 var wsUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
+
 type SafeConn struct {
 	Conn *websocket.Conn
 	Mu   sync.Mutex
 }
+
 func (s *SafeConn) WriteJSON(v interface{}) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 	return s.Conn.WriteJSON(v)
 }
+
 var (
 	activeConnections   = make(map[int][]*SafeConn)
 	usernames           = make(map[int]string)
 	activeConnectionsMu sync.RWMutex
 )
-func addConnection(userID int, nickname string, conn *websocket.Conn) {
+
+func addConnection(userID int, nickname string, conn *websocket.Conn) *SafeConn {
 	activeConnectionsMu.Lock()
 	defer activeConnectionsMu.Unlock()
 
 	sc := &SafeConn{Conn: conn}
 	activeConnections[userID] = append(activeConnections[userID], sc)
 	usernames[userID] = nickname
+	return sc
 }
 
 func removeConnection(userID int, conn *websocket.Conn) {
@@ -84,7 +90,9 @@ func broadcastToAll(payload map[string]interface{}) {
 	activeConnectionsMu.RUnlock()
 
 	for _, conn := range all {
-		_ = conn.WriteJSON(payload)
+		if err := conn.WriteJSON(payload); err != nil {
+			conn.Conn.Close()
+		}
 	}
 }
 
@@ -126,6 +134,12 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 				userID, receiverID, text,
 			)
 			if err != nil {
+				sendToSingleUser(userID, map[string]interface{}{
+					"type": "error",
+					"data": map[string]interface{}{
+						"message": "Could not send message",
+					},
+				})
 				continue
 			}
 
@@ -186,7 +200,7 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addConnection(userID, nickname, conn)
+	safeConn := addConnection(userID, nickname, conn)
 
 	db.DataBase.Exec("UPDATE users SET is_online = TRUE WHERE id = ?", userID)
 
@@ -207,7 +221,7 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	activeConnectionsMu.RUnlock()
 
-	_ = (&SafeConn{Conn: conn}).WriteJSON(map[string]interface{}{
+	_ = safeConn.WriteJSON(map[string]interface{}{
 		"type": "users",
 		"data": map[string]interface{}{
 			"currentUserId": userID,

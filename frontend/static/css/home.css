@@ -1124,9 +1124,14 @@ flex-wrap: wrap;
   right: 8px;
   width: 8px;
   height: 8px;
+  display: none;
   background-color: #ff4d4f;
   border-radius: 50%;
   border: 2px solid white; 
+}
+
+.notification-header-btn.has-unread .notification-dot {
+  display: block;
 }
 
 #dark.active ~ .notification-header-btn:hover {

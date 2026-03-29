@@ -29,7 +29,7 @@ new Router()
     .on("/", () => AuthController.guardRoute(HomeController.showHomePage, "home"))
         .on("/login", () => AuthController.guardRoute(() => AuthController.showAuthPage('login'), "auth"))
     .on("/register", () => AuthController.guardRoute(() => AuthController.showAuthPage('register'), "auth"))
-    .on("/messages",()=>AuthController.guardRoute(()=>messages.ShowMessagesPage(),"home"))
+    .on("/messages", ({ url }) => AuthController.guardRoute(() => messages.ShowMessagesPage(url), "home"))
     .on("/likedpost",()=>AuthController.guardRoute(()=>liked.getlikedpost(),"home"))
     .on("/saved",()=>AuthController.guardRoute(()=>saved.getsavedpost(),"home"))
   .listen(pageNotFound);
@@ -52,5 +52,4 @@ document.body.addEventListener("submit", (e) => {
     PostController.handleCreatePost();
   }
 });
-
 

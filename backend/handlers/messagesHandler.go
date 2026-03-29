@@ -20,6 +20,16 @@ type SafeConn struct {
 	Mu   sync.Mutex
 }
 
+type ChatMessage struct {
+	ID               int
+	From             int
+	To               int
+	Text             string
+	Timestamp        string
+	SenderNickname   string
+	ReceiverNickname string
+}
+
 func (s *SafeConn) WriteJSON(v interface{}) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
@@ -95,7 +105,7 @@ func broadcastToAll(payload map[string]interface{}) {
 	}
 }
 
-func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
+func handleUserMessages(userID int, conn *websocket.Conn, safeConn *SafeConn, dbConn *sql.DB) {
 	defer func() {
 		removeConnection(userID, conn)
 		conn.Close()
@@ -113,6 +123,45 @@ func handleUserMessages(userID int, conn *websocket.Conn, dbConn *sql.DB) {
 		}
 
 		switch msg["type"] {
+		case "users":
+			_ = sendUsersSnapshot(safeConn, userID, dbConn)
+
+		case "history":
+			receiverID, ok := parseInt(msg["receiver"])
+			if !ok {
+				continue
+			}
+
+			offset, ok := parseOptionalInt(msg["offset"])
+			if !ok {
+				offset = 0
+			}
+
+			limit, ok := parseOptionalInt(msg["limit"])
+			if !ok || limit <= 0 {
+				limit = 10
+			}
+
+			messages, hasMore, err := fetchConversationMessages(dbConn, userID, receiverID, limit, offset)
+			if err != nil {
+				_ = safeConn.WriteJSON(map[string]interface{}{
+					"type": "error",
+					"data": map[string]interface{}{
+						"message": "Could not load messages",
+					},
+				})
+				continue
+			}
+
+			_ = safeConn.WriteJSON(map[string]interface{}{
+				"type": "history",
+				"data": map[string]interface{}{
+					"userId":  receiverID,
+					"offset":  offset,
+					"hasMore": hasMore,
+					"items":   buildMessagePayloads(messages),
+				},
+			})
 
 		case "message":
 			receiverID, ok := parseInt(msg["receiver"])
@@ -184,6 +233,158 @@ func parseInt(v interface{}) (int, bool) {
 	}
 }
 
+func parseOptionalInt(v interface{}) (int, bool) {
+	if v == nil {
+		return 0, false
+	}
+	return parseInt(v)
+}
+
+func sendUsersSnapshot(conn *SafeConn, userID int, dbConn *sql.DB) error {
+	users, err := buildUserList(dbConn, userID)
+	if err != nil {
+		return err
+	}
+
+	return conn.WriteJSON(map[string]interface{}{
+		"type": "users",
+		"data": map[string]interface{}{
+			"currentUserId": userID,
+			"users":         users,
+		},
+	})
+}
+
+func buildUserList(dbConn *sql.DB, currentUserID int) ([]map[string]interface{}, error) {
+	activeConnectionsMu.RLock()
+	onlineUsers := make(map[int]bool, len(activeConnections))
+	for id, conns := range activeConnections {
+		onlineUsers[id] = len(conns) > 0
+	}
+	activeConnectionsMu.RUnlock()
+
+	rows, err := dbConn.Query("SELECT id, nickname FROM users WHERE id != ? ORDER BY nickname ASC", currentUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []map[string]interface{}{}
+	for rows.Next() {
+		var id int
+		var nickname string
+		if err := rows.Scan(&id, &nickname); err != nil {
+			return nil, err
+		}
+
+		lastMessage, lastMessageTime, err := fetchLastConversationMessage(dbConn, currentUserID, id)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, map[string]interface{}{
+			"id":              id,
+			"nickname":        nickname,
+			"online":          onlineUsers[id],
+			"lastMessageText": lastMessage,
+			"lastMessageTime": lastMessageTime,
+		})
+	}
+
+	return users, rows.Err()
+}
+
+func fetchLastConversationMessage(dbConn *sql.DB, currentUserID int, otherUserID int) (string, string, error) {
+	var text sql.NullString
+	var createdAt sql.NullString
+
+	err := dbConn.QueryRow(`
+		SELECT message, created_at
+		FROM messages
+		WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+		ORDER BY created_at DESC, id DESC
+		LIMIT 1
+	`, currentUserID, otherUserID, otherUserID, currentUserID).Scan(&text, &createdAt)
+	if err == sql.ErrNoRows {
+		return "", "", nil
+	}
+	if err != nil {
+		return "", "", err
+	}
+
+	return text.String, createdAt.String, nil
+}
+
+func fetchConversationMessages(dbConn *sql.DB, currentUserID int, otherUserID int, limit int, offset int) ([]ChatMessage, bool, error) {
+	rows, err := dbConn.Query(`
+		SELECT
+			m.id,
+			m.sender_id,
+			m.receiver_id,
+			m.message,
+			m.created_at,
+			sender.nickname,
+			receiver.nickname
+		FROM messages m
+		JOIN users sender ON sender.id = m.sender_id
+		JOIN users receiver ON receiver.id = m.receiver_id
+		WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+		ORDER BY m.created_at DESC, m.id DESC
+		LIMIT ? OFFSET ?
+	`, currentUserID, otherUserID, otherUserID, currentUserID, limit+1, offset)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+
+	messages := []ChatMessage{}
+	for rows.Next() {
+		var message ChatMessage
+		if err := rows.Scan(
+			&message.ID,
+			&message.From,
+			&message.To,
+			&message.Text,
+			&message.Timestamp,
+			&message.SenderNickname,
+			&message.ReceiverNickname,
+		); err != nil {
+			return nil, false, err
+		}
+		messages = append(messages, message)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, err
+	}
+
+	hasMore := len(messages) > limit
+	if hasMore {
+		messages = messages[:limit]
+	}
+
+	for left, right := 0, len(messages)-1; left < right; left, right = left+1, right-1 {
+		messages[left], messages[right] = messages[right], messages[left]
+	}
+
+	return messages, hasMore, nil
+}
+
+func buildMessagePayloads(messages []ChatMessage) []map[string]interface{} {
+	payloads := make([]map[string]interface{}, 0, len(messages))
+	for _, message := range messages {
+		payloads = append(payloads, map[string]interface{}{
+			"id":               message.ID,
+			"from":             message.From,
+			"to":               message.To,
+			"text":             message.Text,
+			"time":             message.Timestamp,
+			"senderNickname":   message.SenderNickname,
+			"receiverNickname": message.ReceiverNickname,
+		})
+	}
+	return payloads
+}
+
 func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := GetUserFromSession(r, db.DataBase)
 	if err != nil {
@@ -209,24 +410,7 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 		"nickname": nickname,
 	})
 
-	activeConnectionsMu.RLock()
-	users := []map[string]interface{}{}
-	for id, name := range usernames {
-		users = append(users, map[string]interface{}{
-			"id":       id,
-			"nickname": name,
-			"online":   true,
-		})
-	}
-	activeConnectionsMu.RUnlock()
+	_ = sendUsersSnapshot(safeConn, userID, db.DataBase)
 
-	_ = safeConn.WriteJSON(map[string]interface{}{
-		"type": "users",
-		"data": map[string]interface{}{
-			"currentUserId": userID,
-			"users":         users,
-		},
-	})
-
-	handleUserMessages(userID, conn, db.DataBase)
+	handleUserMessages(userID, conn, safeConn, db.DataBase)
 }

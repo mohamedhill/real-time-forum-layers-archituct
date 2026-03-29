@@ -9,6 +9,7 @@ const state = {
   currentUserId: null,
   users: [],
   messages: new Map(),
+  historyMeta: new Map(),
 }
 
 export function initializeOnlineUsers() {
@@ -40,6 +41,7 @@ export function ShowMessagesPage(url = new URL(window.location.href)) {
 function bindStaticEvents() {
   const sendBtn = document.getElementById("sendMessageBtn")
   const input = document.getElementById("messageInput")
+  const messagesBox = document.getElementById("chatMessages")
 
   sendBtn?.addEventListener("click", sendMessage)
   input?.addEventListener("keydown", (event) => {
@@ -48,6 +50,15 @@ function bindStaticEvents() {
       sendMessage()
     }
   })
+
+  const maybeLoadOlderMessages = debounce(() => {
+    if (!selectedUser || messagesBox.scrollTop > 16) return
+    loadConversationHistory(selectedUser.id)
+  }, 80)
+
+  messagesBox?.addEventListener("scroll", throttle(() => {
+    maybeLoadOlderMessages()
+  }, 200))
 }
 function connectMessagesSocket() {
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
@@ -115,6 +126,18 @@ function connectMessagesSocket() {
       updateNotificationState()
       return
     }
+    if (payload.type === "history") {
+      const partnerId = parseUserId(payload.data?.userId)
+      if (partnerId == null) return
+      const offset = Number(payload.data?.offset) || 0
+      const messages = (payload.data?.items || []).map(normalizeMessage).filter(Boolean)
+      mergeHistoryPage(partnerId, messages, Boolean(payload.data?.hasMore))
+      renderUsers()
+      if (selectedUser?.id === partnerId) {
+        renderMessages({ preserveScroll: offset > 0, prependCount: messages.length })
+      }
+      return
+    }
     if (payload.type === "error") {
       setConnectionState(payload.data?.message || "Chat error")
     }
@@ -125,9 +148,13 @@ function connectMessagesSocket() {
 }
 function storeMessage(message) {
   const partnerId = message.from === state.currentUserId ? message.to : message.from
-  const existing = state.messages.get(partnerId) || []
-  existing.push(message)
-  state.messages.set(partnerId, existing)
+  const conversation = ensureConversationState(partnerId)
+  if (!conversation.items.some((item) => item.id === message.id)) {
+    conversation.items.push(message)
+  }
+  conversation.loaded = true
+  conversation.offset = conversation.items.length
+  state.messages.set(partnerId, conversation.items)
 }
 
 function renderUsers() {
@@ -155,9 +182,11 @@ function renderUsers() {
       selectedUser = user
       pendingSelectedUserId = null
       clearUnreadMessages(user.id)
+      resetConversationHistory(user.id)
       updateSelectedHeader()
       renderUsers()
       renderMessages()
+      loadConversationHistory(user.id)
     })
   })
 }
@@ -175,10 +204,11 @@ function renderOnlineUserCard(user) {
 }
 
 function renderChatListItem(user) {
-  const history = state.messages.get(user.id) || []
+  const history = ensureConversationState(user.id).items
   const lastMessage = history[history.length - 1]
-  const preview = lastMessage ? lastMessage.text : "Start a conversation"
-  const time = lastMessage ? formatTime(lastMessage.timestamp) : ""
+  const preview = lastMessage?.text || user.lastMessageText || "Start a conversation"
+  const timeValue = lastMessage?.timestamp || user.lastMessageTime
+  const time = timeValue ? formatTime(timeValue) : ""
   const activeClass = selectedUser?.id === user.id ? " chat-item-active" : ""
 
   return `
@@ -220,6 +250,10 @@ function ensureSelectedUser() {
 
   updateSelectedHeader()
   renderMessages()
+  if (selectedUser) {
+    resetConversationHistory(selectedUser.id)
+    loadConversationHistory(selectedUser.id)
+  }
 }
 
 function updateSelectedHeader() {
@@ -239,14 +273,16 @@ function updateSelectedHeader() {
   statusNode.textContent = selectedUser.online ? "Online" : "Offline"
   input.disabled = false
 }
-function renderMessages() {
+function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
   const messagesBox = document.getElementById("chatMessages")
   if (!messagesBox) return
+  const previousHeight = messagesBox.scrollHeight
+  const previousTop = messagesBox.scrollTop
   if (!selectedUser) {
     messagesBox.innerHTML = `<div class="chat-empty">Choose a user to start chatting.</div>`
     return
   }
-  const history = state.messages.get(selectedUser.id) || []
+  const history = ensureConversationState(selectedUser.id).items
   if (!history.length) {
     messagesBox.innerHTML = `<div class="chat-empty">No messages yet with ${escapeHtml(selectedUser.nickname)}.</div>`
     return
@@ -265,6 +301,10 @@ function renderMessages() {
       </div>
     `
   }).join("")
+  if (preserveScroll && prependCount > 0) {
+    messagesBox.scrollTop = messagesBox.scrollHeight - previousHeight + previousTop
+    return
+  }
   messagesBox.scrollTop = messagesBox.scrollHeight
 }
 function sendMessage() {
@@ -390,10 +430,12 @@ function getSortedChatUsers() {
 }
 
 function getLastMessageTime(userId) {
-  const history = state.messages.get(userId) || []
+  const history = ensureConversationState(userId).items
   const lastMessage = history[history.length - 1]
-  if (!lastMessage?.timestamp) return 0
-  return new Date(lastMessage.timestamp).getTime() || 0
+  const fallbackTime = state.users.find((user) => user.id === userId)?.lastMessageTime
+  const value = lastMessage?.timestamp || fallbackTime
+  if (!value) return 0
+  return new Date(value).getTime() || 0
 }
 
 function normalizeUser(user) {
@@ -404,6 +446,8 @@ function normalizeUser(user) {
     id,
     nickname: user?.nickname || `User ${id}`,
     online: Boolean(user?.online),
+    lastMessageText: user?.lastMessageText || "",
+    lastMessageTime: user?.lastMessageTime || "",
   }
 }
 
@@ -416,6 +460,103 @@ function normalizeMessage(message) {
     from,
     to,
     timestamp: message?.timestamp || message?.time || null,
+  }
+}
+
+function ensureConversationState(userId) {
+  if (!state.historyMeta.has(userId)) {
+    state.historyMeta.set(userId, {
+      loaded: false,
+      loading: false,
+      hasMore: true,
+      offset: 0,
+      items: [],
+    })
+  }
+  const conversation = state.historyMeta.get(userId)
+  state.messages.set(userId, conversation.items)
+  return conversation
+}
+
+function resetConversationHistory(userId) {
+  state.historyMeta.set(userId, {
+    loaded: false,
+    loading: false,
+    hasMore: true,
+    offset: 0,
+    items: [],
+  })
+  state.messages.set(userId, [])
+}
+
+function loadConversationHistory(userId) {
+  const conversation = ensureConversationState(userId)
+  if (conversation.loading || (!conversation.hasMore && conversation.loaded)) return
+  if (!socket || socket.readyState !== WebSocket.OPEN) return
+
+  conversation.loading = true
+  socket.send(JSON.stringify({
+    type: "history",
+    receiver: userId,
+    offset: conversation.offset,
+    limit: 10,
+  }))
+}
+
+function mergeHistoryPage(userId, messages, hasMore) {
+  const conversation = ensureConversationState(userId)
+  const existingIds = new Set(conversation.items.map((message) => message.id))
+  const olderMessages = messages.filter((message) => !existingIds.has(message.id))
+
+  conversation.items = [...olderMessages, ...conversation.items]
+  conversation.loaded = true
+  conversation.loading = false
+  conversation.hasMore = hasMore
+  conversation.offset = conversation.items.length
+  state.messages.set(userId, conversation.items)
+
+  const user = state.users.find((item) => item.id === userId)
+  const latestMessage = conversation.items[conversation.items.length - 1]
+  if (user && latestMessage) {
+    user.lastMessageText = latestMessage.text
+    user.lastMessageTime = latestMessage.timestamp
+  }
+}
+
+function throttle(callback, delay) {
+  let lastRun = 0
+  let timeoutId = null
+
+  return (...args) => {
+    const now = Date.now()
+    const remaining = delay - (now - lastRun)
+
+    if (remaining <= 0) {
+      lastRun = now
+      callback(...args)
+      return
+    }
+
+    if (timeoutId) return
+    timeoutId = window.setTimeout(() => {
+      lastRun = Date.now()
+      timeoutId = null
+      callback(...args)
+    }, remaining)
+  }
+}
+
+function debounce(callback, delay) {
+  let timeoutId = null
+
+  return (...args) => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId)
+    }
+    timeoutId = window.setTimeout(() => {
+      timeoutId = null
+      callback(...args)
+    }, delay)
   }
 }
 

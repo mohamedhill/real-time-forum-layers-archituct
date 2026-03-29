@@ -188,10 +188,6 @@ export const mobilenav = `
             </form>
         </div>
     </div>`;
-
-
-
-    
     export const errorpage = `
         <div class="error-container">
           <div class="error-content">

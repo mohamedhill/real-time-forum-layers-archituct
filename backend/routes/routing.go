@@ -44,8 +44,6 @@ func Routing() {
 	http.HandleFunc("/", handlers.Showhome)
 	http.HandleFunc("/addpost", postHandler.AddPost)
 	http.HandleFunc("/posts", postHandler.GetPosts)
-	http.HandleFunc("/liked-posts", postHandler.GetLikedPosts)
-	http.HandleFunc("/saved-posts", postHandler.GetsavedPosts)
 	http.HandleFunc("/ws/messages", handlers.ChatWsHandler)
 	http.HandleFunc("/liked-posts",postHandler.GetLikedPosts)
 	http.HandleFunc("/saved-posts",postHandler.GetsavedPosts)

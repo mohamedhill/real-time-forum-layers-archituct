@@ -360,3 +360,103 @@
   .chat-item:nth-child(4) { animation-delay: 0.2s; }
   .chat-item:nth-child(5) { animation-delay: 0.25s; }
  */
+
+
+ :root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-light: #f8fafc;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+}
+
+.messages-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  width: 100%;
+  height: 100%;
+}
+
+.messages-sidebar-panel {
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border-color); }
+.sidebar-header h2 { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+.chat-connection-state { font-size: 0.75rem; color: var(--text-muted); }
+
+.chat-list { flex: 1; overflow-y: auto; }
+.chat-item {
+  display: flex; padding: 16px 20px; gap: 12px; cursor: pointer; position: relative;
+}
+.chat-item:hover { background: #f1f5f9; }
+.chat-item-active { background: #eef2ff !important; border-left: 4px solid var(--primary-color); }
+
+.chat-avatar { position: relative; }
+.avatar-placeholder { 
+  width: 45px; height: 45px; background: #e2e8f0; border-radius: 50%; 
+  display: flex; align-items: center; justify-content: center; font-weight: bold;
+}
+.online-dot { 
+  width: 12px; height: 12px; background: #10b981; border: 2px solid white; 
+  border-radius: 50%; position: absolute; bottom: 0; right: 0; 
+}
+
+.chat-info { flex: 1; overflow: hidden; }
+.chat-name { font-weight: 700; color: var(--text-main); }
+.chat-preview { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.messages-chat-panel { display: flex; flex-direction: column; background: var(--bg-light); height: 100%; }
+.messages-chat-header { background: white; padding: 12px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; height: 70px; }
+.chat-back-btn { border: none; background: #f1f5f9; padding: 8px; border-radius: 50%; cursor: pointer; margin-right: 12px; display: none; }
+
+.messages-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.message-row { display: flex; width: 100%; }
+.mine { justify-content: flex-end; }
+.theirs { justify-content: flex-start; }
+
+.message-bubble { 
+  max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; 
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+}
+.mine .message-bubble { background: var(--primary-color); color: white; border-bottom-right-radius: 4px; }
+.theirs .message-bubble { background: white; color: var(--text-main); border-bottom-left-radius: 4px; }
+.message-time { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; text-align: right; }
+
+.message-composer { padding: 15px 20px; background: white; border-top: 1px solid var(--border-color); }
+.input-wrapper { display: flex; background: #f1f5f9; border-radius: 25px; padding: 5px 5px 5px 15px; align-items: center; width: 100%;}
+.message-input { flex: 1; border: none; background: transparent; outline: none; padding: 8px 0; }
+.send-message-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--primary-color); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+@media (max-width: 768px) {
+  .messages-layout { grid-template-columns: 1fr; }
+  /* Default on small screens: show users list, hide chat panel */
+  .messages-chat-panel { display: none !important; }
+  .messages-sidebar-panel { display: block; }
+
+  /* When chat is open (class on .phone), hide sidebar and show chat full-viewport */
+  .phone.chat-open .messages-sidebar-panel { display: none !important; }
+  .phone.chat-open .messages-chat-panel {
+    display: flex !important;
+    z-index: 1200;
+    background: #fff;
+    padding: 12px;
+    border-radius: 0;
+    flex-direction: column;
+  }
+
+  /* Back button visible when chat open */
+  .phone.chat-open #chatBackBtn,
+  .phone.chat-open .chat-back-btn { display: inline-flex !important; }
+
+  /* Make composer sticky and content scrollable inside chat panel */
+  .phone.chat-open .messages-box { overflow-y: auto; padding: 16px; }
+  .phone.chat-open .message-composer { position: sticky; bottom: 10%; background: #fff; padding: 12px; }
+}
+.header-left{
+  display: flex;
+}

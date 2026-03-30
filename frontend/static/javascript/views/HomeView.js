@@ -188,6 +188,14 @@ export function renderPostList(posts) {
   posts.forEach((post) => container.appendChild(buildPostCard(post)));
 }
 
+export function appendPostList(posts) {
+  const container = document.getElementById("posts-container");
+  if (!container || !posts?.length) return;
+
+  container.classList.add("posts-grid");
+  posts.forEach((post) => container.appendChild(buildPostCard(post)));
+}
+
 export function prependPostCard(post) {
   const container = document.getElementById("posts-container");
   container.prepend(buildPostCard(post));

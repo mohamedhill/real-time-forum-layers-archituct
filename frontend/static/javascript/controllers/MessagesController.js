@@ -137,28 +137,9 @@ function connectMessagesSocket() {
 }
 
 function renderUsers() {
-  const chatList = document.getElementById("chatList")
-  if (!chatList) return
-
   const chatUsers = getSortedChatUsers()
-  chatList.innerHTML = chatUsers.length 
-    ? chatUsers.map(renderChatListItem).join("") 
-    : `<div class="chat-empty">No users found.</div>`
-
-  chatList.querySelectorAll("[data-user-id]").forEach((node) => {
-    node.addEventListener("click", () => {
-      const user = chatUsers.find((item) => item.id === Number(node.dataset.userId))
-      if (!user) return
-      selectedUser = user
-      pendingSelectedUserId = null
-      clearUnreadMessages(user.id)
-      updateSelectedHeader()
-      renderUsers()
-      renderMessages()
-      loadConversationHistory(user.id)
-      enterConversationView()
-    })
-  })
+  renderChatUsers(chatUsers)
+  renderSidebarUsers(chatUsers)
 }
 
 function renderChatListItem(user) {
@@ -181,6 +162,62 @@ function renderChatListItem(user) {
       ${hasUnread ? '<div class="unread-badge"></div>' : ""}
     </div>
   `
+}
+
+function renderChatUsers(chatUsers) {
+  const chatList = document.getElementById("chatList")
+  if (!chatList) return
+
+  chatList.innerHTML = chatUsers.length
+    ? chatUsers.map(renderChatListItem).join("")
+    : `<div class="chat-empty">No users found.</div>`
+
+  bindUserSelection(chatList, chatUsers, { enterChat: true })
+}
+
+function renderSidebarUsers(users) {
+  const sidebarList = document.getElementById("sidebarOnlineList")
+  if (!sidebarList) return
+
+  const sidebarUsers = [...users].sort((a, b) => a.nickname.localeCompare(b.nickname))
+  sidebarList.innerHTML = sidebarUsers.length
+    ? sidebarUsers.map(renderSidebarUserItem).join("")
+    : `<div class="chat-empty-mini">No users found.</div>`
+
+  bindUserSelection(sidebarList, sidebarUsers, { enterChat: false })
+}
+
+function renderSidebarUserItem(user) {
+  return `
+    <div class="pinned-item" data-user-id="${user.id}">
+      <div class="pinned-avatar">
+        <div class="avatar-placeholder">${escapeHtml(firstLetter(user.nickname))}</div>
+        ${user.online ? '<div class="online-dot"></div>' : ""}
+      </div>
+      <div class="pinned-name-row">
+        <div class="pinned-name">${escapeHtml(user.nickname)}</div>
+        ${user.online ? '<span class="pinned-status-dot" aria-label="Online"></span>' : ""}
+      </div>
+    </div>
+  `
+}
+
+function bindUserSelection(container, users, { enterChat }) {
+  container.querySelectorAll("[data-user-id]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const user = users.find((item) => item.id === Number(node.dataset.userId))
+      if (!user) return
+      selectedUser = user
+      pendingSelectedUserId = null
+      clearUnreadMessages(user.id)
+      updateSelectedHeader()
+      renderUsers()
+      renderMessages()
+      loadConversationHistory(user.id)
+      if (enterChat) enterConversationView()
+      else navigation.navigate(`/messages?user=${user.id}`)
+    })
+  })
 }
 
 function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {

@@ -3,8 +3,12 @@
  * Pure data layer: no DOM access, no UI logic.
  */
 
-export async function fetchPosts() {
-  const res = await fetch("/posts");
+export async function fetchPosts({ limit = 10, offset = 0 } = {}) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  const res = await fetch(`/posts?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch posts");
   return res.json();
 }

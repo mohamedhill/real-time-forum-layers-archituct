@@ -50,9 +50,16 @@ func (s *PostService) CreatePost(input models.PostInput, userID int, nickname st
 	}, nil
 }
 
-// GetAllPosts returns all posts
-func (s *PostService) GetAllPosts() ([]models.Post, error) {
-	posts, err := s.postRepo.GetAll()
+// GetAllPosts returns paginated posts
+func (s *PostService) GetAllPosts(limit int, offset int) ([]models.Post, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	posts, err := s.postRepo.GetAll(limit, offset)
 	if err != nil {
 		return nil, ErrInternal
 	}

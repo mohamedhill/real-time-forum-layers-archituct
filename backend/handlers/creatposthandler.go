@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"forum/backend/models"
 	"forum/backend/service"
@@ -62,7 +63,33 @@ func (h *PostHandler) AddPost(w http.ResponseWriter, r *http.Request) {
 
 // GetPosts handles GET /posts
 func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.postService.GetAllPosts()
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	limit := 10
+	offset := 0
+
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		limit = value
+	}
+
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 0 {
+			writeError(w, http.StatusBadRequest, "invalid offset")
+			return
+		}
+		offset = value
+	}
+
+	posts, err := h.postService.GetAllPosts(limit, offset)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
 		return

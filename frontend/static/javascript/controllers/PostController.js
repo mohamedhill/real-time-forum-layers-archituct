@@ -3,24 +3,26 @@ import * as HomeView from "../views/HomeView.js";
 import * as ReactionController from "./ReactionController.js";
 import * as CommentController from "./CommentController.js";
 
+const POSTS_PAGE_SIZE = 10
+
+const postsFeedState = {
+  offset: 0,
+  loading: false,
+  hasMore: true,
+  scrollElement: null,
+  scrollHandler: null,
+}
+
 //  Load Posts 
 
 export async function loadPosts() {
-  const posts = await PostModel.fetchPosts();
-  if (!posts)return
-  HomeView.renderPostList(posts);
-
-  // Fetch reaction counts for each rendered post card
-  document.querySelectorAll(".post-card").forEach((card) => {
-    ReactionController.loadCountsForPost(card.dataset.postId);
-  });
-  
-  // Load comment counts and setup comment listeners
-  setupCommentListeners();
-  CommentController.loadCommentCountsForAllPosts();
+  resetPostsFeed()
+  attachInfiniteScroll()
+  await loadNextPostsPage({ replace: true })
 }
 
 export async function loadlikedposts() {
+  detachInfiniteScroll()
   const posts = await PostModel.getLikedPosts();
 
   HomeView.renderPostList(posts)
@@ -38,6 +40,7 @@ export async function loadlikedposts() {
 
 
 export async function loadsavedposts() {
+  detachInfiniteScroll()
   const posts = await PostModel.getSavedPosts();
   HomeView.renderPostList(posts)
 
@@ -48,6 +51,93 @@ export async function loadsavedposts() {
   // Load comment counts and setup comment listeners
   setupCommentListeners();
   CommentController.loadCommentCountsForAllPosts();
+}
+
+async function loadNextPostsPage({ replace = false } = {}) {
+  if (postsFeedState.loading || !postsFeedState.hasMore) return
+
+  postsFeedState.loading = true
+
+  try {
+    const posts = await PostModel.fetchPosts({
+      limit: POSTS_PAGE_SIZE,
+      offset: postsFeedState.offset,
+    })
+
+    if (!posts) return
+
+    const pagePosts = getPagePosts(posts)
+    if (!pagePosts.length) {
+      postsFeedState.hasMore = false
+      return
+    }
+
+    if (replace) HomeView.renderPostList(pagePosts)
+    else HomeView.appendPostList(pagePosts)
+
+    hydrateRenderedPosts(pagePosts)
+
+    postsFeedState.offset += pagePosts.length
+    postsFeedState.hasMore = hasMorePosts(posts, pagePosts.length)
+  } finally {
+    postsFeedState.loading = false
+  }
+}
+
+function getPagePosts(posts) {
+  if (posts.length > POSTS_PAGE_SIZE) {
+    return posts.slice(postsFeedState.offset, postsFeedState.offset + POSTS_PAGE_SIZE)
+  }
+
+  return posts
+}
+
+function hasMorePosts(posts, pageLength) {
+  if (posts.length > POSTS_PAGE_SIZE) {
+    return postsFeedState.offset + pageLength < posts.length
+  }
+
+  return pageLength === POSTS_PAGE_SIZE
+}
+
+function hydrateRenderedPosts(posts) {
+  posts.forEach((post) => {
+    ReactionController.loadCountsForPost(post.id)
+  })
+
+  setupCommentListeners()
+  CommentController.loadCommentCountsForAllPosts()
+}
+
+function resetPostsFeed() {
+  postsFeedState.offset = 0
+  postsFeedState.loading = false
+  postsFeedState.hasMore = true
+}
+
+function attachInfiniteScroll() {
+  detachInfiniteScroll()
+
+  const content = document.querySelector(".content")
+  if (!content) return
+
+  postsFeedState.scrollElement = content
+  postsFeedState.scrollHandler = async () => {
+    const remaining = content.scrollHeight - content.scrollTop - content.clientHeight
+    if (remaining > 180) return
+    await loadNextPostsPage()
+  }
+
+  content.addEventListener("scroll", postsFeedState.scrollHandler)
+}
+
+function detachInfiniteScroll() {
+  if (postsFeedState.scrollElement && postsFeedState.scrollHandler) {
+    postsFeedState.scrollElement.removeEventListener("scroll", postsFeedState.scrollHandler)
+  }
+
+  postsFeedState.scrollElement = null
+  postsFeedState.scrollHandler = null
 }
 
 //  Create Post 
@@ -86,6 +176,10 @@ export async function handleCreatePost() {
         time: data.time,
         id: data.id,
       });
+      ReactionController.loadCountsForPost(data.id)
+      setupCommentListeners()
+      CommentController.loadCommentCountsForAllPosts()
+      if (postsFeedState.offset > 0) postsFeedState.offset += 1
       HomeView.hideCreatePostModal();
     }
   } catch (err) {

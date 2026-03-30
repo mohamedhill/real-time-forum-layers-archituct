@@ -35,8 +35,7 @@ export const sidebar = `
 <div class="online-users-section">
   <div class="section-header">
     <div class="section-title">
-      <span class="live-dot"></span>
-      Online Users
+      Users
     </div>
   </div>
   <div class="online-users-wrapper no-scroll-buttons">

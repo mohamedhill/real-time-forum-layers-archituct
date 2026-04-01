@@ -180,21 +180,31 @@ export const mobilenav = `
             </form>
         </div>
     </div>`;
-    export const errorpage = `
-        <div class="error-container">
-          <div class="error-content">
-            <h1 class="error-code">404</h1>
-            <div class="error-icon">
-              <i class="ri-map-pin-user-line"></i>
-            </div>
-            <h2>Oops! You're lost in space.</h2>
-            <p>The page you are looking for doesn't exist or has been moved.</p>
-            <a href="/" class="back-home-btn">
-              <i class="ri-home-5-line"></i> Back to Home
-            </a>
-          </div>
+export function errorpage({
+  code = "404",
+  title = "Oops! You're lost in space.",
+  message = "The page you are looking for doesn't exist or has been moved.",
+  icon = "ri-map-pin-user-line",
+} = {}) {
+  return `
+    <div class="error-container">
+      <div class="error-content">
+        <div class="error-badge">Request Failed</div>
+        <h1 class="error-code">${code}</h1>
+        <div class="error-icon" aria-hidden="true">
+          <i class="${icon}"></i>
         </div>
-      `
+        <h2>${title}</h2>
+        <p>${message}</p>
+        <div class="error-actions">
+          <a href="/" class="back-home-btn">
+            <i class="ri-home-5-line"></i> Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  `
+}
 
 
 

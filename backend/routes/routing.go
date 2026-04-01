@@ -3,8 +3,10 @@ package routes
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"forum/backend/handlers"
+	"forum/backend/middleware"
 	"forum/backend/repository"
 	"forum/backend/service"
 )
@@ -33,25 +35,26 @@ func Routing() {
 	commentHandler := handlers.NewCommentHandler(commentService, sessionService)
 	//chatHandler := handlers.NewChatHandler(sessionService)
 
-	// Routes
-	http.HandleFunc("/react", reactionHandler.React)
-	http.HandleFunc("/reaction-counts", reactionHandler.GetCounts)
-	http.Handle("/static/", handlers.StaticHandler())
-	http.Handle("/registerAuth", registerHandler)
-	http.Handle("/loginAuth", loginHandler)
-	http.Handle("/check-session", checkSessionHandler)
-	http.Handle("/logout", logoutHandler)
-	http.HandleFunc("/", handlers.Showhome)
-	http.HandleFunc("/addpost", postHandler.AddPost)
-	http.HandleFunc("/posts", postHandler.GetPosts)
-	http.HandleFunc("/ws/messages", handlers.ChatWsHandler)
-	http.HandleFunc("/liked-posts",postHandler.GetLikedPosts)
-	http.HandleFunc("/saved-posts",postHandler.GetsavedPosts)
-	http.HandleFunc("/addcomment", commentHandler.AddComment)
-	http.HandleFunc("/comments", commentHandler.GetComments)
-	http.HandleFunc("/comment-count", commentHandler.GetCommentCount)
-	http.HandleFunc("/deletecomment", commentHandler.DeleteComment)
+	apiRateLimiter := middleware.NewRateLimiterManager(500, time.Minute)
 
+	// Routes
+	http.HandleFunc("/react", middleware.RateLimitMiddleware(apiRateLimiter, reactionHandler.React))
+	http.HandleFunc("/reaction-counts", middleware.RateLimitMiddleware(apiRateLimiter, reactionHandler.GetCounts))
+	http.Handle("/static/", handlers.StaticHandler())
+	http.Handle("/registerAuth", middleware.RateLimitMiddleware(apiRateLimiter, registerHandler.ServeHTTP))
+	http.Handle("/loginAuth", middleware.RateLimitMiddleware(apiRateLimiter, loginHandler.ServeHTTP))
+	http.Handle("/check-session", middleware.RateLimitMiddleware(apiRateLimiter, checkSessionHandler.ServeHTTP))
+	http.Handle("/logout", middleware.RateLimitMiddleware(apiRateLimiter, logoutHandler.ServeHTTP))
+	http.HandleFunc("/", handlers.Showhome)
+	http.HandleFunc("/addpost", middleware.RateLimitMiddleware(apiRateLimiter, postHandler.AddPost))
+	http.HandleFunc("/posts", middleware.RateLimitMiddleware(apiRateLimiter, postHandler.GetPosts))
+	http.HandleFunc("/ws/messages", handlers.ChatWsHandler)
+	http.HandleFunc("/liked-posts", middleware.RateLimitMiddleware(apiRateLimiter, postHandler.GetLikedPosts))
+	http.HandleFunc("/saved-posts", middleware.RateLimitMiddleware(apiRateLimiter, postHandler.GetsavedPosts))
+	http.HandleFunc("/addcomment", middleware.RateLimitMiddleware(apiRateLimiter, commentHandler.AddComment))
+	http.HandleFunc("/comments", middleware.RateLimitMiddleware(apiRateLimiter, commentHandler.GetComments))
+	http.HandleFunc("/comment-count", middleware.RateLimitMiddleware(apiRateLimiter, commentHandler.GetCommentCount))
+	http.HandleFunc("/deletecomment", middleware.RateLimitMiddleware(apiRateLimiter, commentHandler.DeleteComment))
 
 	log.Println("Server running at http://localhost:8081")
 	log.Fatal(http.ListenAndServe(":8081", nil))

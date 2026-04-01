@@ -55,12 +55,17 @@ export function applyTheme(theme) {
   const light = document.getElementById("light");
   const logo = document.getElementById("homelogo");
   const back = document.getElementById("home-back");
+  const chat = document.getElementsByClassName("messages-chat-panel")[0]
 
   if (theme === "dark") {
     if (light) light.style.display = "flex";
     if (dark) dark.style.display = "none";
     if (logo) logo.src = "static/img/logo-remove.png";
     if (back) back.src = "static/img/darkback.png";
+    console.log(chat);
+    
+    if (chat)chat.style.background = "url('static/img/darkback.png')";
+    
     document.body.classList.add("dark-mode");
     document.body.classList.remove("light-mode");
   } else {
@@ -186,6 +191,14 @@ export function renderPostList(posts) {
   if (!posts)return
   
   posts.forEach((post) => container.appendChild(buildPostCard(post)));
+}
+
+export function renderEmptyPosts(message) {
+  const container = document.getElementById("posts-container");
+  if (!container) return;
+
+  container.classList.remove("posts-grid");
+  container.innerHTML = `<p class="no-comments">${message}</p>`;
 }
 
 export function appendPostList(posts) {
@@ -383,12 +396,20 @@ export function buildCommentItem(postId, comment) {
   commentContent.className = "comment-content";
   commentContent.textContent = comment.content;
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "delete-comment-btn";
-  deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-  deleteBtn.title = "Delete comment";
+  const currentUserId = Number(window.currentUserId);
+  const isOwnerById = !Number.isNaN(currentUserId) && currentUserId > 0 && currentUserId === Number(comment.userID);
+  const isOwnerByNickname = !isOwnerById && window.currentUser && comment.nickname === window.currentUser;
 
-  commentDiv.append(commentHeader, commentContent, deleteBtn);
+  commentDiv.append(commentHeader, commentContent);
+
+  if (isOwnerById || isOwnerByNickname) {
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-comment-btn";
+    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    deleteBtn.title = "Delete comment";
+    commentDiv.append(deleteBtn);
+  }
+
   return commentDiv;
 }
 

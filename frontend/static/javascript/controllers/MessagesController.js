@@ -1,4 +1,5 @@
 import * as navigate from "../navigation/Navigation.js"
+import * as HomeView from "../views/HomeView.js"
 
 let socket = null
 let selectedUser = null
@@ -30,6 +31,7 @@ export function ShowMessagesPage(url = new URL(window.location.href)) {
   rightSidebar.classList.add("visible")
   navigate.setActiveNav("/messages")
   rightSidebar.innerHTML = messageLayout()
+  HomeView.applyTheme(localStorage.getItem("theme") || "light")
 
   bindStaticEvents()
   renderUsers()
@@ -234,6 +236,11 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
 
   const history = ensureConversationState(selectedUser.id).items
   const currentId = state.currentUserId
+
+  if (!history.length) {
+    messagesBox.innerHTML = `<div class="chat-empty">No messages yet, say hi.</div>`
+    return
+  }
 
   messagesBox.innerHTML = history.map((message) => {
     const own = message.from === currentId

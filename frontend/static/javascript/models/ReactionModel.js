@@ -3,18 +3,18 @@
  * Pure data layer: no DOM access, no UI logic.
  */
 
+import { parseJSONResponse } from "../helpers/api.js";
+
 export async function sendReaction(postId, type) {
   const res = await fetch("/react", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ postId, type }),
   });
-  if (!res.ok) throw new Error("Failed to send reaction");
-  return res.json();
+  return parseJSONResponse(res, "Failed to send reaction");
 }
 
 export async function fetchReactionCounts(postId) {
   const res = await fetch(`/reaction-counts?postId=${postId}`);
-  if (!res.ok) throw new Error("Failed to fetch reaction counts");
-  return res.json(); // { likes, dislikes, saves }
+  return parseJSONResponse(res, "Failed to fetch reaction counts");
 }

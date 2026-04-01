@@ -3,14 +3,15 @@
  * Pure data layer: no DOM access, no UI logic.
  */
 
+import { parseJSONResponse } from "../helpers/api.js";
+
 export async function fetchPosts({ limit = 10, offset = 0 } = {}) {
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
   const res = await fetch(`/posts?${params.toString()}`);
-  if (!res.ok) throw new Error("Failed to fetch posts");
-  return res.json();
+  return parseJSONResponse(res, "Failed to fetch posts");
 }
 
 export async function createPost(postData) {
@@ -19,40 +20,26 @@ export async function createPost(postData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(postData),
   });
-  const json = await res.json();
-  return { ok: res.ok, status: res.status, data: json };
+  const json = await parseJSONResponse(res, "Failed to create post");
+  return { ok: true, status: res.status, data: json };
 }
 
 
 export async function getLikedPosts() {
-  
-    const response = await fetch("/liked-posts", {
-      method: "GET",
-      credentials: "include", 
-    });
+  const response = await fetch("/liked-posts", {
+    method: "GET",
+    credentials: "include",
+  });
 
-    if (!response.ok) {
-      alert("Failed to fetch liked posts");
-      return
-    }
-
-    return response.json();
-
+  return parseJSONResponse(response, "Failed to fetch liked posts");
 }
 
 
 export async function getSavedPosts() {
-  
-    const response = await fetch("/saved-posts", {
-      method: "GET",
-      credentials: "include", 
-    });
+  const response = await fetch("/saved-posts", {
+    method: "GET",
+    credentials: "include",
+  });
 
-    if (!response.ok) {
-      alert("Failed to fetch liked posts");
-      return
-    }
-
-    return response.json();
-
+  return parseJSONResponse(response, "Failed to fetch saved posts");
 }

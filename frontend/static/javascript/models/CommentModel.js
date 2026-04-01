@@ -1,14 +1,14 @@
 
+import { parseJSONResponse } from "../helpers/api.js";
+
 export async function fetchComments(postId) {
   const res = await fetch(`/comments?postId=${postId}`);
-  if (!res.ok) throw new Error("Failed to fetch comments");
-  return res.json();
+  return parseJSONResponse(res, "Failed to fetch comments");
 }
 
 export async function getCommentCount(postId) {
   const res = await fetch(`/comment-count?postId=${postId}`);
-  if (!res.ok) throw new Error("Failed to fetch comment count");
-  const data = await res.json();
+  const data = await parseJSONResponse(res, "Failed to fetch comment count");
   return data.count;
 }
 
@@ -18,8 +18,8 @@ export async function createComment(commentData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(commentData),
   });
-  const json = await res.json();
-  return { ok: res.ok, status: res.status, data: json };
+  const json = await parseJSONResponse(res, "Failed to create comment");
+  return { ok: true, status: res.status, data: json };
 }
 
 export async function deleteComment(commentId) {
@@ -27,6 +27,6 @@ export async function deleteComment(commentId) {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
   });
-  const json = await res.json();
-  return { ok: res.ok, status: res.status, data: json };
+  const json = await parseJSONResponse(res, "Failed to delete comment");
+  return { ok: true, status: res.status, data: json };
 }

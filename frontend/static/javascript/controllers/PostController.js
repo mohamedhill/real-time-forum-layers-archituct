@@ -24,6 +24,10 @@ export async function loadPosts() {
 export async function loadlikedposts() {
   detachInfiniteScroll()
   const posts = await PostModel.getLikedPosts();
+  if (!posts?.length) {
+    HomeView.renderEmptyPosts("No liked posts yet");
+    return
+  }
 
   HomeView.renderPostList(posts)
 
@@ -42,6 +46,11 @@ export async function loadlikedposts() {
 export async function loadsavedposts() {
   detachInfiniteScroll()
   const posts = await PostModel.getSavedPosts();
+  if (!posts?.length) {
+    HomeView.renderEmptyPosts("No saved posts yet");
+    return
+  }
+
   HomeView.renderPostList(posts)
 
     document.querySelectorAll(".post-card").forEach((card) => {
@@ -66,37 +75,24 @@ async function loadNextPostsPage({ replace = false } = {}) {
 
     if (!posts) return
 
-    const pagePosts = getPagePosts(posts)
-    if (!pagePosts.length) {
+    if (!posts.length) {
       postsFeedState.hasMore = false
       return
     }
 
-    if (replace) HomeView.renderPostList(pagePosts)
-    else HomeView.appendPostList(pagePosts)
+    if (replace) HomeView.renderPostList(posts)
+    else HomeView.appendPostList(posts)
 
-    hydrateRenderedPosts(pagePosts)
+    hydrateRenderedPosts(posts)
 
-    postsFeedState.offset += pagePosts.length
-    postsFeedState.hasMore = hasMorePosts(posts, pagePosts.length)
+    postsFeedState.offset += posts.length
+    postsFeedState.hasMore = hasMorePosts(posts.length)
   } finally {
     postsFeedState.loading = false
   }
 }
 
-function getPagePosts(posts) {
-  if (posts.length > POSTS_PAGE_SIZE) {
-    return posts.slice(postsFeedState.offset, postsFeedState.offset + POSTS_PAGE_SIZE)
-  }
-
-  return posts
-}
-
-function hasMorePosts(posts, pageLength) {
-  if (posts.length > POSTS_PAGE_SIZE) {
-    return postsFeedState.offset + pageLength < posts.length
-  }
-
+function hasMorePosts(pageLength) {
   return pageLength === POSTS_PAGE_SIZE
 }
 
@@ -183,7 +179,7 @@ export async function handleCreatePost() {
       HomeView.hideCreatePostModal();
     }
   } catch (err) {
-    alert("Error creating post:", err);
+    alert(err.message || "Error creating post");
   }
 }
 

@@ -38,8 +38,15 @@ func (h *CheckSessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	nicknameJSON, _ := json.Marshal(nickname)
+	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid session")
+		return
+	}
 
-	body := `{"message":"session valid","nickname":` + string(nicknameJSON) + `}`
+	nicknameJSON, _ := json.Marshal(nickname)
+	userIDJSON, _ := json.Marshal(userID)
+
+	body := `{"message":"session valid","nickname":` + string(nicknameJSON) + `,"userID":` + string(userIDJSON) + `}`
 	writeJSON(w, http.StatusOK, body)
 }

@@ -34,8 +34,9 @@ export async function guardRoute(onGranted, routeType) {
 
     if (result.status === 200 && result.data) {
       const nickName = result.data.nickname;
+      const userID = Number(result.data.userID);
       window.currentUser = nickName;
-      console.log(nickName);
+      window.currentUserId = Number.isNaN(userID) ? null : userID;
       
     }
 

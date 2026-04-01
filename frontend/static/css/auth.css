@@ -5,6 +5,9 @@
 
   --first-color: #7E99D8;
   --first-color-alt:#4b6ec0;
+  --surface-color: #ffffff;
+  --surface-alt: #f7faff;
+  --border-color: #dbe4f4;
   --title-color: hsl(220, 68%, 4%);
   --white-color: hsl(0, 0%, 100%);
   --text-color: hsl(220, 15%, 66%);
@@ -26,6 +29,19 @@
   --z-tooltip: 10;
   --z-fixed: 100;
   --header-height: 64px;
+}
+
+body.dark-mode {
+  --first-color: #5b7cff;
+  --first-color-alt: #4a6af1;
+  --surface-color: #151a24;
+  --surface-alt: #1b2230;
+  --border-color: #263042;
+  --title-color: #eef3ff;
+  --white-color: #f8fbff;
+  --text-color: #97a6bf;
+  --body-color: #0f1117;
+  --container-color: #18202d;
 }
 
 
@@ -55,7 +71,7 @@ body {
   background-color: var(--body-color);
   color: var(--text-color);
   margin: 0;
-  
+  transition: background-color .3s ease, color .3s ease;
 }
 html,
 body {
@@ -114,6 +130,8 @@ a {
   align-items: center;
   background-color: var(--container-color);
   border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
 }
 
 .login__input {
@@ -125,6 +143,7 @@ a {
   border-radius: 1rem;
   z-index: 1;
   transition: border-color .4s;
+  color: var(--title-color);
 }
 
 
@@ -143,6 +162,7 @@ a {
   position: absolute;
   left: 1.25rem;
   font-weight: var(--font-semi-bold);
+  color: var(--text-color);
   transition: transform .4s, font-size .4s, color .4s;
 }
 
@@ -150,6 +170,7 @@ a {
   position: absolute;
   right: 1rem;
   font-size: 1.25rem;
+  color: var(--text-color);
   transition: color .4s;
 }
 
@@ -164,7 +185,7 @@ a {
   width: 100%;
   display: inline-flex;
   justify-content: center;
-  background-color: #7E99D8;
+  background-color: var(--first-color);
   color: var(--white-color);
   font-weight: var(--font-semi-bold);
   padding-block: 1.5rem;
@@ -191,7 +212,7 @@ a {
 
 .login__switch a {
   background: none;
-  color: #7E99D8;
+  color: var(--first-color);
   font-size: var(--small-font-size);
   font-weight: var(--font-semi-bold);
   cursor: pointer;
@@ -199,7 +220,7 @@ a {
 }
 
 .login__switch button:hover {
-  color: #7E99D8;
+  color: var(--first-color);
 }
 
 
@@ -320,6 +341,14 @@ width: 50%;
   object-fit: cover;
   z-index: -1;
   display: none;
+}
+
+body.dark-mode .login__title {
+  text-shadow: none;
+}
+
+body.dark-mode .login__box {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
 }
 
 @media screen and (min-width: 1150px) {

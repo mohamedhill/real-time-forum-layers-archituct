@@ -54,7 +54,7 @@ export async function handleAddComment(postId) {
     }
   } catch (err) {
     console.error("Error adding comment:", err);
-    alert("Error adding comment");
+    alert(err.message || "Error adding comment");
   }
 }
 
@@ -88,7 +88,7 @@ export async function handleDeleteComment(postId, commentId) {
     }
   } catch (err) {
     console.error("Error deleting comment:", err);
-    alert("Error deleting comment");
+    alert(err.message || "Error deleting comment");
   }
 }
 

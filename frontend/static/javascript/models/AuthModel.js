@@ -3,14 +3,16 @@
  * Pure data layer: no DOM access, no UI logic.
  */
 
+import { parseJSONResponse } from "../helpers/api.js";
+
 export async function register(data) {
   const res = await fetch("/registerAuth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  const json = await res.json();
-  return { ok: res.ok, status: res.status, data: json };
+  const json = await parseJSONResponse(res, "Failed to register");
+  return { ok: true, status: res.status, data: json };
 }
 
 export async function login(identifier, password) {
@@ -19,12 +21,13 @@ export async function login(identifier, password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ identifier, password }),
   });
-  const json = await res.json();
-  return { ok: res.ok, status: res.status, data: json };
+  const json = await parseJSONResponse(res, "Failed to login");
+  return { ok: true, status: res.status, data: json };
 }
 
 export async function logout() {
-  await fetch("/logout", { method: "POST", credentials: "include" });
+  const res = await fetch("/logout", { method: "POST", credentials: "include" });
+  return parseJSONResponse(res, "Failed to logout");
 }
 
 export async function checkSession() {
@@ -34,6 +37,6 @@ export async function checkSession() {
     return { status: res.status };
   }
 
-  const data = await res.json(); 
+  const data = await res.json();
   return { status: res.status, data };
 }

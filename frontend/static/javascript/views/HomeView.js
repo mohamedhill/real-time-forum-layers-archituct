@@ -62,16 +62,22 @@ export function applyTheme(theme) {
     if (dark) dark.style.display = "none";
     if (logo) logo.src = "static/img/logo-remove.png";
     if (back) back.src = "static/img/darkback.png";
-    console.log(chat);
+
     
-    if (chat)chat.style.background = "url('static/img/darkback.png')";
-    
+    if (chat){chat.style.background = "url('static/img/darkback.png')";
+      chat.style.backgroundSize= "cover"
+
+    }
     document.body.classList.add("dark-mode");
     document.body.classList.remove("light-mode");
   } else {
     if (dark) dark.style.display = "flex";
     if (light) light.style.display = "none";
     if (logo) logo.src = "static/img/logo-remove.png";
+    if (chat){
+      chat.style.background = "url('static/img/back.png')";
+      chat.style.backgroundSize= "cover"
+    }
     if (back) back.src = "static/img/back.png";
     document.body.classList.remove("dark-mode");
     document.body.classList.add("light-mode");

@@ -6,6 +6,6 @@ forum.db
 # Ignore temporary files
 *.log
 *.tmp
-.vscode
-.dashbourd.html
-.codex
+*.vscode
+*.dashbourd.html
+*.codex

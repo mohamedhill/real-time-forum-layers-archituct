@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -27,14 +28,8 @@ func (h *CommentHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	userID, nickname, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, nickname, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -52,7 +47,11 @@ func (h *CommentHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 
 	comment, err := h.commentService.CreateComment(input, userID, nickname)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
+		if errors.Is(err, service.ErrInternal) {
+			writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
+			return
+		}
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -133,14 +132,8 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, _, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -159,6 +152,10 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	err = h.commentService.DeleteComment(commentID, userID)
 	if err != nil {
+		if errors.Is(err, service.ErrCommentNotFound) {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
 		return
 	}

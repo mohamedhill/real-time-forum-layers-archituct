@@ -72,8 +72,11 @@ function bindStaticEvents() {
 }
 
 function connectMessagesSocket() {
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "users" }))
+    return
+  }
+  if (socket && socket.readyState === WebSocket.CONNECTING) {
     return
   }
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"

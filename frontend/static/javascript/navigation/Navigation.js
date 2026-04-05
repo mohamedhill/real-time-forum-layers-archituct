@@ -5,7 +5,7 @@
 
 
   export function setActiveNav(path) {
-  document.querySelectorAll(".nav-item,.nav-buttum").forEach(btn => {
+  document.querySelectorAll(".nav-item,.nav-bottum").forEach(btn => {
     
     btn.classList.remove("active")
     if (btn.dataset.route === path) {
@@ -28,7 +28,6 @@ export function initNavigation() {
     })
   })
 }
-
 
 
 

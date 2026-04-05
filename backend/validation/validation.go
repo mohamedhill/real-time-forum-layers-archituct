@@ -23,8 +23,8 @@ func CheckValidity(user models.User) string {
 	switch {
 	case !nicknameRe.MatchString(user.Nickname):
 		return "Please choose a valid nickname (3-16 characters, start with a letter)."
-	case user.Age < 10 || user.Age > 120:
-		return "Please enter a valid age between 10 and 120."
+	case user.Age < 16 || user.Age > 100:
+		return "Please enter a valid age between 16 and 100."
 	case !firstNameRe.MatchString(user.FirstName):
 		return "Please enter a valid first name (letters only)."
 	case !lastNameRe.MatchString(user.LastName):

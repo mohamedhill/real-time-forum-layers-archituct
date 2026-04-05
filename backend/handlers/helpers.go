@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"forum/backend/middleware"
 )
 
 // writeJSON writes a raw JSON string with a status code
@@ -79,4 +81,12 @@ func GetUserFromSession(r *http.Request, db *sql.DB) (int, error) {
 	}
 
 	return userID, nil
+}
+
+func getAuthenticatedUser(r *http.Request) (int, string, bool) {
+	user, ok := middleware.GetSessionUser(r.Context())
+	if !ok {
+		return 0, "", false
+	}
+	return user.ID, user.Nickname, true
 }

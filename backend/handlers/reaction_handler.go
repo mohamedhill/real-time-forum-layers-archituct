@@ -25,14 +25,8 @@ func (h *ReactionHandler) React(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		writeError(w, 401, "unauthorized")
-		return
-	}
-
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, _, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, 401, "unauthorized")
 		return
 	}
@@ -65,15 +59,19 @@ func (h *ReactionHandler) React(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ReactionHandler) GetCounts(w http.ResponseWriter, r *http.Request) {
-	postID, _ := strconv.Atoi(r.URL.Query().Get("postId"))
-
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+
+	postID, err := strconv.Atoi(r.URL.Query().Get("postId"))
+	if err != nil || postID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid postId")
+		return
+	}
+
+	userID, _, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -85,5 +83,6 @@ func (h *ReactionHandler) GetCounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(counts)
 }

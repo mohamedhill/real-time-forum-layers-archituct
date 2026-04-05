@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"time"
 
 	"forum/backend/repository"
@@ -22,24 +23,21 @@ func (s *SessionService) ValidateSession(token string) (bool, bool, string, erro
 		return false, false, "", nil
 	}
 
-	exists, err := s.userRepo.SessionExists(token)
-	if err != nil || !exists {
-		return false, false, "", err
+	userID, nickname, expiry, err := s.userRepo.GetSessionInfo(token)
+	if err == sql.ErrNoRows {
+		return false, false, "", nil
 	}
-
-	expiry, err := s.userRepo.GetSessionExpiry(token)
 	if err != nil {
 		return false, false, "", err
 	}
+	if userID <= 0 || !expiry.Valid {
+		_ = s.userRepo.ClearSession(token)
+		return false, true, "", nil
+	}
 
-	if expiry.Before(time.Now()) {
+	if expiry.Time.Before(time.Now()) {
 		_ = s.userRepo.ClearSession(token)
 		return true, true, "", nil
-	}
-
-	nickname, err := s.userRepo.GetNicknameBySession(token)
-	if err != nil {
-		return false, false, "", err
 	}
 
 	return true, false, nickname, nil

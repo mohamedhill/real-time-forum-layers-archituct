@@ -1,8 +1,6 @@
 package repository
 
 import (
-	
-
 	db "forum/backend/database"
 	"forum/backend/models"
 )
@@ -67,11 +65,20 @@ func (r *CommentRepository) GetCommentCount(postID int) (int, error) {
 	return count, err
 }
 
-//removes a comment 
-func (r *CommentRepository) Delete(commentID, userID int) error {
-	_, err := db.DataBase.Exec(
+// Delete removes a comment owned by the user and reports whether anything changed.
+func (r *CommentRepository) Delete(commentID, userID int) (bool, error) {
+	result, err := db.DataBase.Exec(
 		`DELETE FROM comments WHERE id = ? AND userID = ?`,
 		commentID, userID,
 	)
-	return err
+	if err != nil {
+		return false, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowsAffected > 0, nil
 }

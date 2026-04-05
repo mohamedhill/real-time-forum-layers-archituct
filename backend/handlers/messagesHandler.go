@@ -386,14 +386,11 @@ func buildMessagePayloads(messages []ChatMessage) []map[string]interface{} {
 }
 
 func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := GetUserFromSession(r, db.DataBase)
-	if err != nil {
+	userID, nickname, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-
-	var nickname string
-	db.DataBase.QueryRow("SELECT nickname FROM users WHERE id = ?", userID).Scan(&nickname)
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {

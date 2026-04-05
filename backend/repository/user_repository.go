@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"time"
 
 	db "forum/backend/database"
@@ -80,45 +81,27 @@ func (r *UserRepository) ClearSession(token string) error {
 	return err
 }
 
-// GetSessionInfo returns user ID, nickname, and expiry for a session token
-func (r *UserRepository) GetSessionInfo(token string) (id int, nickname string, expiry time.Time, err error) {
+// GetSessionInfo returns user ID, nickname, and expiry for a session token.
+func (r *UserRepository) GetSessionInfo(token string) (id int, nickname string, expiry sql.NullTime, err error) {
 	err = db.DataBase.QueryRow(
 		`SELECT id, nickname, dateexpired FROM users WHERE session = ?`, token,
 	).Scan(&id, &nickname, &expiry)
 	return
 }
 
-// SessionExists checks if the session token exists
-func (r *UserRepository) SessionExists(token string) (bool, error) {
-	var exists bool
-	err := db.DataBase.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM users WHERE session = ?)`, token,
-	).Scan(&exists)
-	return exists, err
-}
-
-// GetBySession returns user data from session token (used by middleware)
+// GetBySession returns user data from a non-expired session token.
 func (r *UserRepository) GetBySession(token string) (int, string, error) {
 	var id int
 	var nickname string
 	err := db.DataBase.QueryRow(
-		`SELECT id, nickname FROM users WHERE session = ?`, token,
+		`SELECT id, nickname FROM users WHERE session = ? AND dateexpired IS NOT NULL AND dateexpired > CURRENT_TIMESTAMP`,
+		token,
 	).Scan(&id, &nickname)
 	if err != nil {
 		return 0, "", err
 	}
 	return id, nickname, nil
 }
-
-// GetSessionExpiry returns session expiry time
-func (r *UserRepository) GetSessionExpiry(token string) (time.Time, error) {
-	var expiry time.Time
-	err := db.DataBase.QueryRow(
-		`SELECT dateexpired FROM users WHERE session = ?`, token,
-	).Scan(&expiry)
-	return expiry, err
-}
-
 
 func (r *UserRepository) GetNicknameBySession(token string) (string, error) {
 	var nickname string

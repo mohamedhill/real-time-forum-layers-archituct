@@ -28,14 +28,8 @@ func (h *PostHandler) AddPost(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	userID, nickname, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, nickname, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -51,8 +45,10 @@ func (h *PostHandler) AddPost(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, service.ErrEmptyFields):
 			writeError(w, http.StatusBadRequest, err.Error())
-		default:
+		case errors.Is(err, service.ErrInternal):
 			writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
+		default:
+			writeError(w, http.StatusBadRequest, err.Error())
 		}
 		return
 	}
@@ -108,14 +104,8 @@ func (h *PostHandler) GetLikedPosts(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, _, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -138,14 +128,8 @@ func (h *PostHandler) GetsavedPosts(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
+	userID, _, ok := getAuthenticatedUser(r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}

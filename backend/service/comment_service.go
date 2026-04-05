@@ -54,7 +54,21 @@ func (s *CommentService) GetCommentCount(postID int) (int, error) {
 	return s.commentRepo.GetCommentCount(postID)
 }
 
-// DeleteComment removes a comment if the user owns it
+var ErrCommentNotFound = errors.New("comment not found")
+
+// DeleteComment removes a comment if the user owns it.
 func (s *CommentService) DeleteComment(commentID, userID int) error {
-	return s.commentRepo.Delete(commentID, userID)
+	if commentID <= 0 || userID <= 0 {
+		return ErrCommentNotFound
+	}
+
+	deleted, err := s.commentRepo.Delete(commentID, userID)
+	if err != nil {
+		return err
+	}
+	if !deleted {
+		return ErrCommentNotFound
+	}
+
+	return nil
 }

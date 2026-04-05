@@ -13,11 +13,10 @@ import (
 // CommentHandler handles comment creation and retrieval
 type CommentHandler struct {
 	commentService *service.CommentService
-	sessionService *service.SessionService
 }
 
-func NewCommentHandler(commentService *service.CommentService, sessionService *service.SessionService) *CommentHandler {
-	return &CommentHandler{commentService: commentService, sessionService: sessionService}
+func NewCommentHandler(commentService *service.CommentService) *CommentHandler {
+	return &CommentHandler{commentService: commentService}
 }
 
 // AddComment handles POST /addcomment
@@ -30,7 +29,7 @@ func (h *CommentHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 
 	userID, nickname, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 
@@ -134,7 +133,7 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	userID, _, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 

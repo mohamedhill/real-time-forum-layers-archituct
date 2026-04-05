@@ -2,20 +2,35 @@ import * as HomeView from "../views/HomeView.js";
 import * as PostController from "./PostController.js";
 import * as ReactionController from "./ReactionController.js";
 import * as AuthController from "./AuthController.js";
-import * as navigate from "../navigation/Navigation.js"
-import * as MessagesController from "./MessagesController.js"
+import * as navigate from "../navigation/Navigation.js";
+import * as MessagesController from "./MessagesController.js";
 
-export function showHomePage() {
+function bindPostActionDelegation() {
+  const postsContainer = document.getElementById("posts-container");
+  if (!postsContainer || postsContainer.dataset.actionsBound === "true") return;
+
+  postsContainer.dataset.actionsBound = "true";
+  postsContainer.addEventListener("click", (e) => {
+    const btn = e.target.closest(".action-btn");
+    if (!btn || !postsContainer.contains(btn)) return;
+
+    const postCard = btn.closest(".post-card");
+    if (!postCard) return;
+
+    const postId = postCard.dataset.postId;
+    const action = btn.dataset.action;
+    if (!postId || !action) return;
+
+    ReactionController.actionMap[action]?.(postId);
+  });
+}
+
+export function initializeHomeShell(activeRoute = "/") {
   const { rightSidebar } = HomeView.renderHomePage();
-navigate.setActiveNav("/")
-rightSidebar.classList.remove('visible')
-  // Posts
-  PostController.loadPosts();
-
-  // Initialize online users display in sidebar
-  MessagesController.initializeOnlineUsers();
-
-  //set nick name in the profile sidebar
+  MessagesController.resetMessagesViewState();
+  HomeView.resetMainContentShell();
+  navigate.setActiveNav(activeRoute);
+  rightSidebar.classList.remove("visible");
 
   const nicknameTrigger = document.getElementById("nicknameuser");
   if (nicknameTrigger) {
@@ -24,7 +39,6 @@ rightSidebar.classList.remove('visible')
       : "A";
   }
 
-  // Theme
   const savedTheme = localStorage.getItem("theme") || "light";
   HomeView.applyTheme(savedTheme);
 
@@ -34,7 +48,6 @@ rightSidebar.classList.remove('visible')
     );
   });
 
-  // Logout
   const logoutBtn = document.getElementById("showloginbtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
@@ -43,65 +56,43 @@ rightSidebar.classList.remove('visible')
     });
   }
 
+  const profileBtn = document.getElementById("showprofilebtn");
+  if (profileBtn) {
+    profileBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigation.navigate("/profile");
+    });
+  }
 
-  const profileWrapper = document.getElementById('customProfileWrapper');
-
+  const profileWrapper = document.getElementById("customProfileWrapper");
   if (profileWrapper) {
-    // Using event delegation to avoid duplicate listeners
     profileWrapper.onclick = (event) => {
-      event.stopPropagation(); 
-      profileWrapper.classList.toggle('is-open');
+      event.stopPropagation();
+      profileWrapper.classList.toggle("is-open");
     };
   }
 
-  // Close dropdown when clicking anywhere else (only add once per session)
   if (!window.profileDropdownCloser) {
     window.profileDropdownCloser = () => {
-      const wrapper = document.getElementById('customProfileWrapper');
-      if (wrapper && wrapper.classList.contains('is-open')) {
-        wrapper.classList.remove('is-open');
+      const wrapper = document.getElementById("customProfileWrapper");
+      if (wrapper && wrapper.classList.contains("is-open")) {
+        wrapper.classList.remove("is-open");
       }
     };
-    document.addEventListener('click', window.profileDropdownCloser);
+    document.addEventListener("click", window.profileDropdownCloser);
   }
-  // Messages sidebar toggle
-/*   const messagesBtn = Array.from(document.getElementsByClassName("messagesBtn"));
 
+  navigate.initNavigation();
+  bindPostActionDelegation();
+  return { rightSidebar };
+}
 
-  if (messagesBtn) {
-    messagesBtn.forEach((msg) => {
+export function showHomePage() {
+  initializeHomeShell("/");
 
-      msg.addEventListener("click", () => {
+  PostController.loadPosts();
+  MessagesController.initializeOnlineUsers();
 
-        if (msg.id === "buttommsg") {
-          const main = document.getElementsByClassName('main-content')[0]
-          main.classList.toggle("hidden")
-        }
-
-        rightSidebar.classList.toggle("visible")
-        msg.classList.toggle("active")
-      })
-    })
-  } */
-
-  // Nav item active state
-
- /*  document.querySelectorAll(".nav-item, .nav-bottum")
-    .forEach((item) => {
-      if (!item.classList.contains("messagesBtn")) {
-        item.addEventListener("click", () => {
-          item.classList.toggle("active")
-        })
-      }
-    })
- */
-
-    navigate.initNavigation()
-  
-
-
-
-  // Create-post modal triggers
   const creatPostBtn = document.getElementById("creat-post-btn");
   const writeSomethingBtn = document.getElementById("writesomething");
   const closeBtn = document.getElementById("close-btn");
@@ -118,33 +109,8 @@ rightSidebar.classList.remove('visible')
 
   closeBtn?.addEventListener("click", () => HomeView.hideCreatePostModal());
 
-  // Category selection in the create-post modal
   document.querySelectorAll(".category-btn").forEach((btn) => {
     btn.addEventListener("click", () => btn.classList.toggle("active"));
   });
 
-  // Reaction events (delegated on posts container)
-  const postsContainer = document.getElementById("posts-container");
-  if (postsContainer) {
-    postsContainer.addEventListener("click", (e) => {
-      const btn = e.target.closest(".action-btn");
-
-      if (!btn || !postsContainer.contains(btn)) return;
-
-      const postCard = btn.closest(".post-card");
-      if (!postCard) return;
-
-      const postId = postCard.dataset.postId;
-      const action = btn.dataset.action;
-      if (!postId || !action) return;
-     
-
-
-      ReactionController.actionMap[action]?.(postId);
-    });
-  }
 }
-
-
-
-

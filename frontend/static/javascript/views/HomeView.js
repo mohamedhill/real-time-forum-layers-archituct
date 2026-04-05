@@ -48,6 +48,61 @@ export function getRightSidebar() {
   return _homeDom?.rightSidebar;
 }
 
+export function restoreRightSidebar() {
+  const rightSidebar = getRightSidebar();
+  if (!rightSidebar) return null;
+
+  rightSidebar.className = "right-sidebar";
+  rightSidebar.innerHTML = templates.rightSidebar;
+  return rightSidebar;
+}
+
+export function renderProfileSummary(profile) {
+  const createCard = document.querySelector(".content .card");
+  if (createCard) createCard.style.display = "none";
+
+  const container = document.getElementById("posts-container");
+  if (!container) return;
+
+  container.classList.remove("posts-grid", "posts-grid-layout");
+  container.classList.add("profile-container");
+  container.innerHTML = templates.profileCard(profile);
+
+  const postsList = document.getElementById("profile-posts-list");
+  if (!postsList) return;
+
+  if (!profile.posts?.length) {
+    postsList.innerHTML = `<p class="no-comments">You have not created any posts yet.</p>`;
+    return;
+  }
+
+  profile.posts.forEach((post) => postsList.appendChild(buildPostCard(post)));
+}
+
+export function renderProfileError(message) {
+  const createCard = document.querySelector(".content .card");
+  if (createCard) createCard.style.display = "none";
+
+  const container = document.getElementById("posts-container");
+  if (!container) return;
+
+  container.classList.remove("posts-grid", "posts-grid-layout");
+  container.classList.add("profile-container");
+  container.innerHTML = `<p class="no-comments">${message}</p>`;
+}
+
+export function resetMainContentShell() {
+  const createCard = document.querySelector(".content .card");
+  if (createCard) createCard.style.display = "";
+
+  const container = document.getElementById("posts-container");
+  if (!container) return;
+
+  container.classList.remove("profile-container");
+  container.classList.add("posts-grid-layout", "posts-grid");
+  container.innerHTML = "";
+}
+
 //  Theme 
 
 export function applyTheme(theme) {

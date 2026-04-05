@@ -6,23 +6,41 @@
 import { parseJSONResponse } from "../helpers/api.js";
 
 export async function register(data) {
-  const res = await fetch("/registerAuth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  const json = await parseJSONResponse(res, "Failed to register");
-  return { ok: true, status: res.status, data: json };
+  try {
+    const res = await fetch("/registerAuth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const json = await parseJSONResponse(res, "Failed to register");
+    return { ok: true, status: res.status, data: json };
+  } catch (error) {
+    return {
+      ok: false,
+      status: error?.status ?? 0,
+      data: error?.data ?? null,
+      error,
+    };
+  }
 }
 
 export async function login(identifier, password) {
-  const res = await fetch("/loginAuth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier, password }),
-  });
-  const json = await parseJSONResponse(res, "Failed to login");
-  return { ok: true, status: res.status, data: json };
+  try {
+    const res = await fetch("/loginAuth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password }),
+    });
+    const json = await parseJSONResponse(res, "Failed to login");
+    return { ok: true, status: res.status, data: json };
+  } catch (error) {
+    return {
+      ok: false,
+      status: error?.status ?? 0,
+      data: error?.data ?? null,
+      error,
+    };
+  }
 }
 
 export async function logout() {
@@ -31,12 +49,16 @@ export async function logout() {
 }
 
 export async function checkSession() {
-  const res = await fetch("/check-session", { credentials: "include" });
-
-  if (!res.ok) {
-    return { status: res.status };
+  try {
+    const res = await fetch("/check-session", { credentials: "include" });
+    const data = await parseJSONResponse(res, "Failed to check session");
+    return { ok: true, status: res.status, data };
+  } catch (error) {
+    return {
+      ok: false,
+      status: error?.status ?? 0,
+      data: error?.data ?? null,
+      error,
+    };
   }
-
-  const data = await res.json();
-  return { status: res.status, data };
 }

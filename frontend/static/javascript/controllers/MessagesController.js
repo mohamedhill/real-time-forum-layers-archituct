@@ -19,6 +19,22 @@ export function initializeOnlineUsers() {
   connectMessagesSocket()
 }
 
+export function disconnectMessagesSocket() {
+  if (!socket) return
+  socket.close()
+  socket = null
+}
+
+export function resetMessagesViewState() {
+  const rightSidebar = HomeView.restoreRightSidebar()
+  if (rightSidebar) {
+    rightSidebar.classList.remove("visible", "chat-fullscreen")
+  }
+
+  selectedUser = null
+  pendingSelectedUserId = null
+}
+
 export function ShowMessagesPage(url = new URL(window.location.href)) {
   const rightSidebar = document.getElementsByClassName("right-sidebar")[0]
   if (!rightSidebar) {
@@ -138,6 +154,11 @@ function connectMessagesSocket() {
       }
       return
     }
+  })
+
+  socket.addEventListener("close", () => {
+    setConnectionState("Disconnected")
+    socket = null
   })
 }
 

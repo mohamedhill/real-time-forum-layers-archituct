@@ -72,6 +72,10 @@ export const mainContent = `
   <div class="custom-avatar-trigger" id="nicknameuser">A</div>
 
   <div class="custom-dropdown-content">
+    <button id="showprofilebtn" class="custom-logout-action">
+      <i class="ri-user-3-line"></i>
+      <span>Profile</span>
+    </button>
     <button id="showloginbtn" class="custom-logout-action">
       <i class="ri-logout-box-r-line"></i>
       <span>Logout</span>
@@ -203,6 +207,47 @@ export function errorpage({
         </div>
       </div>
     </div>
+  `
+}
+
+export function profileCard(profile) {
+  return `
+    <section class="profile-shell">
+      <div class="profile-hero">
+        <div class="profile-avatar-large">${(profile.nickname || "?").charAt(0).toUpperCase()}</div>
+        <div class="profile-copy">
+          <p class="profile-eyebrow">Profile</p>
+          <h2 class="profile-name">${profile.nickname || "Unknown user"}</h2>
+          <p class="profile-email">${profile.email || ""}</p>
+        </div>
+      </div>
+
+      <div class="profile-stats-grid">
+        <article class="profile-stat-card">
+          <span class="profile-stat-label">Posts</span>
+          <strong class="profile-stat-value">${profile.postCount ?? 0}</strong>
+        </article>
+        <article class="profile-stat-card">
+          <span class="profile-stat-label">Liked Posts</span>
+          <strong class="profile-stat-value">${profile.likedCount ?? 0}</strong>
+        </article>
+        <article class="profile-stat-card">
+          <span class="profile-stat-label">Saved Posts</span>
+          <strong class="profile-stat-value">${profile.savedCount ?? 0}</strong>
+        </article>
+      </div>
+
+      <section class="profile-posts-panel">
+        <div class="profile-posts-header">
+          <div>
+            <p class="profile-eyebrow">Posts</p>
+            <h3 class="profile-posts-title">Your posts</h3>
+          </div>
+          <span class="profile-posts-count">${profile.posts?.length ?? 0}</span>
+        </div>
+        <div id="profile-posts-list" class="profile-posts-list"></div>
+      </section>
+    </section>
   `
 }
 

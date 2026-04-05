@@ -1,5 +1,6 @@
 import * as AuthModel from "../models/AuthModel.js";
 import * as AuthView from "../views/AuthView.js";
+import { disconnectMessagesSocket } from "./MessagesController.js";
 import { Checkvalid } from "../helpers/checkvalidityinfo.js";
 
 
@@ -16,35 +17,63 @@ function safeNavigate(path) {
   setTimeout(() => (_isNavigating = false), 50);
 }
 
+function applySessionUser(data) {
+  const nickName = data?.nickname || null;
+  const userID = Number(data?.userID);
+
+  window.currentUser = nickName;
+  window.currentUserId = Number.isNaN(userID) ? null : userID;
+}
+
+function clearSessionUser() {
+  window.currentUser = null;
+  window.currentUserId = null;
+}
+
+function getRegisterErrorMessage(status, json) {
+  const serverMessage = json?.error?.trim?.() || "";
+  if (serverMessage) return serverMessage;
+
+  if (status === 409) {
+    return "This nickname or email is already in use.";
+  }
+
+  if (status === 400) {
+    return "Please check your registration details and try again.";
+  }
+
+  if (status >= 500) {
+    return "Registration failed on the server. Please try again.";
+  }
+
+  return "Something went wrong while creating your account.";
+}
+
 //  Route guard 
 
 export async function guardRoute(onGranted, routeType) {
-  try {
-    const result = await AuthModel.checkSession();
+  const result = await AuthModel.checkSession();
 
-    if (routeType === "home" && result.status === 401) {
+  if (!result.ok) {
+    clearSessionUser();
+
+    if (routeType === "home") {
       safeNavigate("/login");
       return;
     }
 
-    if (routeType === "auth" && result.status === 200) {
-      safeNavigate("/");
-      return;
-    }
-
-    if (result.status === 200 && result.data) {
-      const nickName = result.data.nickname;
-      const userID = Number(result.data.userID);
-      window.currentUser = nickName;
-      window.currentUserId = Number.isNaN(userID) ? null : userID;
-      
-    }
-
     onGranted();
-  } catch {
-    if (routeType === "home") safeNavigate("/login");
-    else onGranted();
+    return;
   }
+
+  applySessionUser(result.data);
+
+  if (routeType === "auth") {
+    safeNavigate("/");
+    return;
+  }
+
+  onGranted();
 }
 
 //  Register 
@@ -70,14 +99,14 @@ export async function handleRegister() {
     const { ok, status, data: json } = await AuthModel.register(data);
 
     if (!ok) {
-      AuthView.showError(json.error || "Something went wrong", "register");
+      AuthView.showError(getRegisterErrorMessage(status, json), "register");
       return;
     }
     if (status === 201) {
       safeNavigate("/");
     }
-  } catch {
-    AuthView.showError("Network error. Please try again.", "register");
+  } catch (error) {
+    AuthView.showError(error?.message || "Network error. Please try again.", "register");
   }
 }
 
@@ -91,12 +120,12 @@ export async function handleLogin() {
     const { ok, data: json } = await AuthModel.login(identifier, password);
 
     if (!ok) {
-      AuthView.showError(json.error || "Something went wrong", "login");
+      AuthView.showError(json?.error || "Something went wrong", "login");
       return;
     }
     safeNavigate("/");
-  } catch {
-    AuthView.showError("Network error. Please try again.", "login");
+  } catch (error) {
+    AuthView.showError(error?.message || "Network error. Please try again.", "login");
   }
 }
 
@@ -104,8 +133,10 @@ export async function handleLogin() {
 
 export async function handleLogout() {
   try {
+    disconnectMessagesSocket();
     await AuthModel.logout();
   } finally {
+    clearSessionUser();
     safeNavigate("/login");
   }
 }

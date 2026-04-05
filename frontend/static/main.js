@@ -7,6 +7,7 @@ import * as templates from "./javascript/components/componnets.js";
 import * as messages from "./javascript/controllers/MessagesController.js"
 import * as liked from "./javascript/controllers/LikedController.js"
 import * as saved from "./javascript/controllers/SavedController.js"
+import * as profile from "./javascript/controllers/ProfileController.js"
 
 
 //kayn mochkil event duplicate i will be fixed in the next commit
@@ -40,6 +41,7 @@ new Router()
     .on("/messages", ({ url }) => AuthController.guardRoute(() => messages.ShowMessagesPage(url), "home"))
     .on("/likedpost",()=>AuthController.guardRoute(()=>liked.getlikedpost(),"home"))
     .on("/saved",()=>AuthController.guardRoute(()=>saved.getsavedpost(),"home"))
+    .on("/profile",()=>AuthController.guardRoute(()=>profile.showProfilePage(),"home"))
   .listen(pageNotFound);
 
 // All form submissions are caught here and routed to the correct Controller.

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"forum/backend/middleware"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -16,8 +18,9 @@ var wsUpgrader = websocket.Upgrader{
 }
 
 type SafeConn struct {
-	Conn *websocket.Conn
-	Mu   sync.Mutex
+	Conn  *websocket.Conn
+	Mu    sync.Mutex
+	Token string
 }
 
 type ChatMessage struct {
@@ -52,6 +55,19 @@ func addConnection(userID int, nickname string, conn *websocket.Conn) *SafeConn 
 	return sc
 }
 
+func addAuthenticatedConnection(user middleware.SessionUser, conn *websocket.Conn) *SafeConn {
+	activeConnectionsMu.Lock()
+	defer activeConnectionsMu.Unlock()
+
+	sc := &SafeConn{
+		Conn:  conn,
+		Token: user.Token,
+	}
+	activeConnections[user.ID] = append(activeConnections[user.ID], sc)
+	usernames[user.ID] = user.Nickname
+	return sc
+}
+
 func removeConnection(userID int, conn *websocket.Conn) {
 	activeConnectionsMu.Lock()
 	defer activeConnectionsMu.Unlock()
@@ -74,6 +90,37 @@ func removeConnection(userID int, conn *websocket.Conn) {
 			"type": "offline",
 			"id":   userID,
 		})
+	}
+}
+
+func CloseConnectionsForSession(token string) {
+	if token == "" {
+		return
+	}
+
+	activeConnectionsMu.RLock()
+	toClose := make([]struct {
+		userID int
+		conn   *websocket.Conn
+	}, 0)
+	for userID, conns := range activeConnections {
+		for _, safeConn := range conns {
+			if safeConn.Token == token {
+				toClose = append(toClose, struct {
+					userID int
+					conn   *websocket.Conn
+				}{
+					userID: userID,
+					conn:   safeConn.Conn,
+				})
+			}
+		}
+	}
+	activeConnectionsMu.RUnlock()
+
+	for _, item := range toClose {
+		_ = item.conn.Close()
+		removeConnection(item.userID, item.conn)
 	}
 }
 
@@ -386,7 +433,7 @@ func buildMessagePayloads(messages []ChatMessage) []map[string]interface{} {
 }
 
 func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, nickname, ok := getAuthenticatedUser(r)
+	sessionUser, ok := middleware.GetSessionUser(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -397,7 +444,9 @@ func ChatWsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	safeConn := addConnection(userID, nickname, conn)
+	safeConn := addAuthenticatedConnection(sessionUser, conn)
+	userID := sessionUser.ID
+	nickname := sessionUser.Nickname
 
 	db.DataBase.Exec("UPDATE users SET is_online = TRUE WHERE id = ?", userID)
 

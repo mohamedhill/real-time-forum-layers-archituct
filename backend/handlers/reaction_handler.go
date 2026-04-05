@@ -12,11 +12,10 @@ import (
 
 type ReactionHandler struct {
 	reactionService *service.ReactionService
-	sessionService  *service.SessionService
 }
 
-func NewReactionHandler(rs *service.ReactionService, ss *service.SessionService) *ReactionHandler {
-	return &ReactionHandler{rs, ss}
+func NewReactionHandler(rs *service.ReactionService) *ReactionHandler {
+	return &ReactionHandler{reactionService: rs}
 }
 
 func (h *ReactionHandler) React(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +26,7 @@ func (h *ReactionHandler) React(w http.ResponseWriter, r *http.Request) {
 
 	userID, _, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, 401, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 	var input models.ReactionInput
@@ -72,7 +71,7 @@ func (h *ReactionHandler) GetCounts(w http.ResponseWriter, r *http.Request) {
 
 	userID, _, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 

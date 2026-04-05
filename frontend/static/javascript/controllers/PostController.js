@@ -30,14 +30,7 @@ export async function loadlikedposts() {
   }
 
   HomeView.renderPostList(posts)
-
-    document.querySelectorAll(".post-card").forEach((card) => {
-    ReactionController.loadCountsForPost(card.dataset.postId);
-  });
-  
-  // Load comment counts and setup comment listeners
-  setupCommentListeners();
-  CommentController.loadCommentCountsForAllPosts();
+  hydratePostInteractions(posts);
 }
 
 
@@ -52,14 +45,7 @@ export async function loadsavedposts() {
   }
 
   HomeView.renderPostList(posts)
-
-    document.querySelectorAll(".post-card").forEach((card) => {
-    ReactionController.loadCountsForPost(card.dataset.postId);
-  });
-  
-  // Load comment counts and setup comment listeners
-  setupCommentListeners();
-  CommentController.loadCommentCountsForAllPosts();
+  hydratePostInteractions(posts);
 }
 
 async function loadNextPostsPage({ replace = false } = {}) {
@@ -103,6 +89,10 @@ function hydrateRenderedPosts(posts) {
 
   setupCommentListeners()
   CommentController.loadCommentCountsForAllPosts()
+}
+
+export function hydratePostInteractions(posts) {
+  hydrateRenderedPosts(posts || [])
 }
 
 function resetPostsFeed() {

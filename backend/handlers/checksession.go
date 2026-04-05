@@ -1,19 +1,14 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-
-	"forum/backend/service"
 )
 
 // CheckSessionHandler handles GET /check-session
-type CheckSessionHandler struct {
-	sessionService *service.SessionService
-}
+type CheckSessionHandler struct{}
 
-func NewCheckSessionHandler(sessionService *service.SessionService) *CheckSessionHandler {
-	return &CheckSessionHandler{sessionService: sessionService}
+func NewCheckSessionHandler() *CheckSessionHandler {
+	return &CheckSessionHandler{}
 }
 
 func (h *CheckSessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -22,31 +17,15 @@ func (h *CheckSessionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cookie, err := r.Cookie("session")
-	if err != nil || cookie.Value == "" {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+	userID, nickname, ok := getAuthenticatedUser(r)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 
-	exists, expired, nickname, err := h.sessionService.ValidateSession(cookie.Value)
-	if err != nil || !exists {
-		writeError(w, http.StatusUnauthorized, "invalid session")
-		return
-	}
-	if expired {
-		writeError(w, http.StatusUnauthorized, "session expired")
-		return
-	}
-
-	userID, _, err := h.sessionService.GetUserFromSession(cookie.Value)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "invalid session")
-		return
-	}
-
-	nicknameJSON, _ := json.Marshal(nickname)
-	userIDJSON, _ := json.Marshal(userID)
-
-	body := `{"message":"session valid","nickname":` + string(nicknameJSON) + `,"userID":` + string(userIDJSON) + `}`
-	writeJSON(w, http.StatusOK, body)
+	ResponseJSON(w, http.StatusOK, map[string]interface{}{
+		"message":  "session valid",
+		"nickname": nickname,
+		"userID":   userID,
+	})
 }

@@ -115,3 +115,26 @@ func (r *UserRepository) GetNicknameBySession(token string) (string, error) {
 
 	return nickname, nil
 }
+
+func (r *UserRepository) GetProfileSummary(userID int) (models.ProfileSummary, error) {
+	var profile models.ProfileSummary
+
+	err := db.DataBase.QueryRow(`
+		SELECT
+			u.nickname,
+			u.email,
+			(SELECT COUNT(1) FROM posts WHERE userID = u.id),
+			(SELECT COUNT(1) FROM reactions WHERE userID = u.id AND type = 'like'),
+			(SELECT COUNT(1) FROM reactions WHERE userID = u.id AND type = 'save')
+		FROM users u
+		WHERE u.id = ?
+	`, userID).Scan(
+		&profile.Nickname,
+		&profile.Email,
+		&profile.PostCount,
+		&profile.LikedCount,
+		&profile.SavedCount,
+	)
+
+	return profile, err
+}

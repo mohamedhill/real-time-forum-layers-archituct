@@ -23,6 +23,7 @@ func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if cookie, err := r.Cookie("session"); err == nil {
 		_ = h.authService.Logout(cookie.Value)
+		CloseConnectionsForSession(cookie.Value)
 	}
 
 	clearSessionCookie(w)

@@ -191,3 +191,55 @@ func (r *PostRepository) GetSavededPosts(userID int) ([]models.Post, error) {
 
 	return posts, nil
 }
+
+func (r *PostRepository) GetByUserID(userID int) ([]models.Post, error) {
+	rows, err := db.DataBase.Query(`
+        SELECT
+            posts.id,
+            posts.title,
+            posts.description,
+            posts.time,
+            users.nickname,
+            GROUP_CONCAT(Category.Name_Category, ',') as categories
+        FROM posts
+        JOIN users ON posts.userID = users.id
+        LEFT JOIN PostCategory ON posts.id = PostCategory.ID_Post
+        LEFT JOIN Category ON PostCategory.ID_Category = Category.ID
+        WHERE posts.userID = ?
+        GROUP BY posts.id
+        ORDER BY posts.time DESC
+    `, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []models.Post
+
+	for rows.Next() {
+		var p models.Post
+		var categories sql.NullString
+
+		err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Content,
+			&p.Time,
+			&p.Nickname,
+			&categories,
+		)
+		if err != nil {
+			continue
+		}
+
+		if categories.Valid {
+			p.Categories = strings.Split(categories.String, ",")
+		} else {
+			p.Categories = []string{}
+		}
+
+		posts = append(posts, p)
+	}
+
+	return posts, nil
+}

@@ -12,12 +12,11 @@ import (
 
 // PostHandler handles post creation and retrieval
 type PostHandler struct {
-	postService    *service.PostService
-	sessionService *service.SessionService
+	postService *service.PostService
 }
 
-func NewPostHandler(postService *service.PostService, sessionService *service.SessionService) *PostHandler {
-	return &PostHandler{postService: postService, sessionService: sessionService}
+func NewPostHandler(postService *service.PostService) *PostHandler {
+	return &PostHandler{postService: postService}
 }
 
 // AddPost handles POST /addpost
@@ -30,7 +29,7 @@ func (h *PostHandler) AddPost(w http.ResponseWriter, r *http.Request) {
 
 	userID, nickname, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 
@@ -106,7 +105,7 @@ func (h *PostHandler) GetLikedPosts(w http.ResponseWriter, r *http.Request) {
 
 	userID, _, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 
@@ -130,7 +129,7 @@ func (h *PostHandler) GetsavedPosts(w http.ResponseWriter, r *http.Request) {
 
 	userID, _, ok := getAuthenticatedUser(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		writeError(w, http.StatusInternalServerError, "missing session context")
 		return
 	}
 

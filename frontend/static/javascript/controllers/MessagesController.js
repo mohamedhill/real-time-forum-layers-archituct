@@ -5,6 +5,7 @@ let socket = null
 let selectedUser = null
 let pendingSelectedUserId = null
 const unreadUserIds = new Set()
+let notificationCloserBound = false
 
 const state = {
   currentUserId: null,
@@ -52,6 +53,7 @@ export function ShowMessagesPage(url = new URL(window.location.href)) {
   bindStaticEvents()
   renderUsers()
   ensureSelectedUser()
+  bindNotificationEvents()
   
   if (selectedUser) enterConversationView()
   clearUnreadMessages()
@@ -130,6 +132,19 @@ function connectMessagesSocket() {
     if (payload.type === "message") {
       const message = normalizeMessage(payload.data || payload)
       if (!message) return
+      // If a user signs up after we got the initial users snapshot, we may receive a message
+      // from an unknown id (e.g. incognito tab). Add a minimal user entry so notifications
+      // can still display the sender nickname.
+      if (message.from != null && message.from !== state.currentUserId) {
+        const exists = state.users.some((u) => u.id === message.from)
+        if (!exists) {
+          state.users.push({
+            id: message.from,
+            nickname: message.senderNickname || `User ${message.from}`,
+            online: false,
+          })
+        }
+      }
       storeMessage(message)
       if (message.from !== state.currentUserId && !isConversationOpen(message.from)) {
         unreadUserIds.add(message.from)
@@ -268,9 +283,13 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
 
   messagesBox.innerHTML = history.map((message) => {
     const own = message.from === currentId
+    const author = own
+      ? (message.senderNickname || window.currentUser || "You")
+      : (message.senderNickname || selectedUser?.nickname || `User ${message.from}`)
     return `
       <div class="message-row ${own ? "mine" : "theirs"}">
         <div class="message-bubble">
+          <div class="message-author">${escapeHtml(author)}</div>
           <div class="message-text">${escapeHtml(message.text)}</div>
           <div class="message-time">${escapeHtml(formatTime(message.timestamp))}</div>
         </div>
@@ -444,6 +463,12 @@ function setConnectionState(text) {
 
 function firstLetter(v = "?") { return v.charAt(0).toUpperCase() }
 function formatTime(v) { return v ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "" }
+function formatDateTime(v) {
+  if (!v) return ""
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return ""
+  return d.toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+}
 function parseUserId(v) { const id = Number(v); return Number.isInteger(id) && id > 0 ? id : null }
 function isConversationOpen(id) { return selectedUser?.id === id }
 
@@ -455,6 +480,7 @@ function clearUnreadMessages(id = null) {
 function updateNotificationState() {
   const btn = document.getElementById("notificationBtn")
   if (btn) btn.classList.toggle("has-unread", unreadUserIds.size > 0)
+  renderNotificationPanel()
 }
 
 function normalizeUser(u) {
@@ -480,6 +506,78 @@ function escapeHtml(v = "") {
   return String(v).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[s]))
 }
 
-// Stubs for your external notification system
-function bindNotificationEvents() {}
-function renderNotificationItems() { return "" }
+function bindNotificationEvents() {
+  const wrapper = document.getElementById("notificationWrapper")
+  const btn = document.getElementById("notificationBtn")
+  const panel = document.getElementById("notificationPanel")
+  if (!wrapper || !btn || !panel) return
+
+  if (wrapper.dataset.notificationBound === "true") {
+    renderNotificationPanel()
+    return
+  }
+  wrapper.dataset.notificationBound = "true"
+
+  wrapper.addEventListener("click", (e) => e.stopPropagation())
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    wrapper.classList.toggle("is-open")
+    if (wrapper.classList.contains("is-open")) {
+      renderNotificationPanel()
+    }
+  })
+
+  if (!notificationCloserBound) {
+    notificationCloserBound = true
+    document.addEventListener("click", () => {
+      const w = document.getElementById("notificationWrapper")
+      if (w?.classList.contains("is-open")) w.classList.remove("is-open")
+    })
+  }
+
+  renderNotificationPanel()
+}
+
+function renderNotificationPanel() {
+  const panel = document.getElementById("notificationPanel")
+  if (!panel) return
+
+  panel.innerHTML = renderNotificationItems()
+
+  panel.querySelectorAll(".notification-item[data-user-id]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const userId = parseUserId(node.dataset.userId)
+      if (!userId) return
+
+      const wrapper = document.getElementById("notificationWrapper")
+      if (wrapper) wrapper.classList.remove("is-open")
+
+      clearUnreadMessages(userId)
+
+      const path = `/messages?user=${userId}`
+      if (window.navigation?.navigate) window.navigation.navigate(path)
+      else window.location.href = path
+    })
+  })
+}
+
+function renderNotificationItems() {
+  const unread = [...unreadUserIds]
+  if (!unread.length) return `<div class="notification-empty">No new messages.</div>`
+
+  const items = unread
+    .map((id) => {
+      const user = state.users.find((u) => u.id === id) || { id, nickname: `User ${id}` }
+
+      return `
+        <button class="notification-item" type="button" data-user-id="${id}">
+          <div class="notification-item-text">You got a new message from "${escapeHtml(user.nickname)}"</div>
+        </button>
+      `
+    })
+    .join("")
+
+  return items
+}

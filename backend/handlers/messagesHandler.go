@@ -45,16 +45,6 @@ var (
 	activeConnectionsMu sync.RWMutex
 )
 
-func addConnection(userID int, nickname string, conn *websocket.Conn) *SafeConn {
-	activeConnectionsMu.Lock()
-	defer activeConnectionsMu.Unlock()
-
-	sc := &SafeConn{Conn: conn}
-	activeConnections[userID] = append(activeConnections[userID], sc)
-	usernames[userID] = nickname
-	return sc
-}
-
 func addAuthenticatedConnection(user middleware.SessionUser, conn *websocket.Conn) *SafeConn {
 	activeConnectionsMu.Lock()
 	defer activeConnectionsMu.Unlock()
@@ -73,7 +63,6 @@ func removeConnection(userID int, conn *websocket.Conn) {
 	defer activeConnectionsMu.Unlock()
 
 	conns := activeConnections[userID]
-
 	for i, c := range conns {
 		if c.Conn == conn {
 			activeConnections[userID] = append(conns[:i], conns[i+1:]...)

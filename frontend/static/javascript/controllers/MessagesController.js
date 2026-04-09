@@ -1,11 +1,16 @@
 import * as navigate from "../navigation/Navigation.js"
 import * as HomeView from "../views/HomeView.js"
+import * as AuthModel from "../models/AuthModel.js"
 
 let socket = null
 let selectedUser = null
 let pendingSelectedUserId = null
 const unreadUserIds = new Set()
 let notificationCloserBound = false
+let sessionWatchdogId = null
+let lastSessionCheckAt = 0
+let sessionCheckPromise = null
+let loginRedirecting = false
 
 const state = {
   currentUserId: null,
@@ -24,6 +29,10 @@ export function disconnectMessagesSocket() {
   if (!socket) return
   socket.close()
   socket = null
+  if (sessionWatchdogId) {
+    clearInterval(sessionWatchdogId)
+    sessionWatchdogId = null
+  }
 }
 
 export function resetMessagesViewState() {
@@ -58,6 +67,61 @@ export function ShowMessagesPage(url = new URL(window.location.href)) {
   if (selectedUser) enterConversationView()
   clearUnreadMessages()
   connectMessagesSocket()
+}
+
+async function ensureSessionValid({ throttleMs = 4000 } = {}) {
+  const now = Date.now()
+  if (now - lastSessionCheckAt < throttleMs) return true
+  if (sessionCheckPromise) return sessionCheckPromise
+
+  sessionCheckPromise = (async () => {
+    try {
+      const result = await AuthModel.checkSession()
+      lastSessionCheckAt = Date.now()
+      if (result.ok) {
+        const userId = parseUserId(result.data?.userID)
+        if (userId) state.currentUserId = userId
+        window.currentUser = result.data?.nickname || window.currentUser
+        window.currentUserId = userId ?? window.currentUserId
+        return true
+      }
+      handleSessionInvalid()
+      return false
+    } finally {
+      sessionCheckPromise = null
+    }
+  })()
+
+  return sessionCheckPromise
+}
+
+function handleSessionInvalid() {
+  disconnectMessagesSocket()
+  state.currentUserId = null
+  window.currentUser = null
+  window.currentUserId = null
+
+  unreadUserIds.clear()
+  updateNotificationState()
+
+  const input = document.getElementById("messageInput")
+  const sendBtn = document.getElementById("sendMessageBtn")
+  if (input) input.disabled = true
+  if (sendBtn) sendBtn.disabled = true
+  setConnectionState("Logged out")
+
+  const box = document.getElementById("chatMessages")
+  if (box) box.innerHTML = `<div class="chat-empty">Your session is no longer valid. Please log in again.</div>`
+
+  if (!loginRedirecting) {
+    loginRedirecting = true
+    try {
+      if (window.navigation?.navigate) window.navigation.navigate("/login")
+      else window.location.href = "/login"
+    } finally {
+      setTimeout(() => { loginRedirecting = false }, 250)
+    }
+  }
 }
 
 function bindStaticEvents() {
@@ -103,9 +167,17 @@ function connectMessagesSocket() {
   socket.addEventListener("open", () => {
     setConnectionState("Connected")
     socket.send(JSON.stringify({ type: "users" }))
+    if (!sessionWatchdogId) {
+      sessionWatchdogId = setInterval(() => {
+        ensureSessionValid({ throttleMs: 0 })
+      }, 5000)
+    }
   })
 
-  socket.addEventListener("message", (event) => {
+  socket.addEventListener("message", async (event) => {
+    const valid = await ensureSessionValid()
+    if (!valid) return
+
     const payload = JSON.parse(event.data)
     
     if (payload.type === "users") {
@@ -174,6 +246,10 @@ function connectMessagesSocket() {
   socket.addEventListener("close", () => {
     setConnectionState("Disconnected")
     socket = null
+    if (sessionWatchdogId) {
+      clearInterval(sessionWatchdogId)
+      sessionWatchdogId = null
+    }
   })
 }
 
@@ -309,12 +385,16 @@ function sendMessage() {
   if (!input || !selectedUser || !socket || socket.readyState !== WebSocket.OPEN) return
   const text = input.value.trim()
   if (!text) return
-  socket.send(JSON.stringify({
-    type: "message",
-    receiver: selectedUser.id,
-    message: text,
-  }))
-  input.value = ""
+  ensureSessionValid({ throttleMs: 0 }).then((ok) => {
+    if (!ok) return
+    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    socket.send(JSON.stringify({
+      type: "message",
+      receiver: selectedUser.id,
+      message: text,
+    }))
+    input.value = ""
+  })
 }
 
 function enterConversationView() {

@@ -17,6 +17,7 @@ func Routing() {
 	userRepo := repository.NewUserRepository()
 	postRepo := repository.NewPostRepository()
 	commentRepo := repository.NewCommentRepository()
+	messageRepo := repository.NewMessageRepository()
 
 	// Services (business logic layer)
 	reactionService := service.NewReactionService(reactionRepo)
@@ -25,6 +26,7 @@ func Routing() {
 	postService := service.NewPostService(postRepo)
 	commentService := service.NewCommentService(commentRepo)
 	profileService := service.NewProfileService(userRepo, postRepo)
+	messageService := service.NewMessageService(messageRepo)
 
 	// Handlers (presentation layer)
 	reactionHandler := handlers.NewReactionHandler(reactionService)
@@ -35,7 +37,7 @@ func Routing() {
 	postHandler := handlers.NewPostHandler(postService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	profileHandler := handlers.NewProfileHandler(profileService)
-	//chatHandler := handlers.NewChatHandler(sessionService)
+	messageHandler := handlers.NewMessageHandler(messageService)
 
 	apiRateLimiter := middleware.NewRateLimiterManager(500, time.Minute)
 
@@ -50,7 +52,7 @@ func Routing() {
 	http.HandleFunc("/", handlers.Showhome)
 	http.HandleFunc("/addpost", middleware.RateLimitMiddleware(apiRateLimiter, middleware.RequireSession(sessionService, postHandler.AddPost)))
 	http.HandleFunc("/posts", middleware.RateLimitMiddleware(apiRateLimiter, postHandler.GetPosts))
-	http.HandleFunc("/ws/messages", middleware.RequireSession(sessionService, handlers.ChatWsHandler))
+	http.HandleFunc("/ws/messages", middleware.RequireSession(sessionService, messageHandler.ChatWsHandler))
 	http.HandleFunc("/liked-posts", middleware.RateLimitMiddleware(apiRateLimiter, middleware.RequireSession(sessionService, postHandler.GetLikedPosts)))
 	http.HandleFunc("/saved-posts", middleware.RateLimitMiddleware(apiRateLimiter, middleware.RequireSession(sessionService, postHandler.GetsavedPosts)))
 	http.HandleFunc("/profile-data", middleware.RateLimitMiddleware(apiRateLimiter, middleware.RequireSession(sessionService, profileHandler.GetProfileSummary)))

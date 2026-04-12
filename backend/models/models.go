@@ -92,3 +92,19 @@ type ProfileSummary struct {
 	SavedCount int    `json:"savedCount"`
 	Posts      []Post `json:"posts"`
 }
+
+type ChatMessage struct {
+	ID               int    `json:"id"`
+	From             int    `json:"from"`
+	To               int    `json:"to"`
+	Text             string `json:"text"`
+	Timestamp        string `json:"time"`
+	SenderNickname   string `json:"senderNickname"`
+	ReceiverNickname string `json:"receiverNickname"`
+}
+
+type ChatUser struct {
+	ID       int    `json:"id"`
+	Nickname string `json:"nickname"`
+	Online   bool   `json:"online"`
+}

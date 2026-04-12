@@ -1,23 +1,16 @@
 import * as navigate from "../navigation/Navigation.js"
 import * as HomeView from "../views/HomeView.js"
 import * as AuthModel from "../models/AuthModel.js"
+import * as MessageModel from "../models/MessageModel.js"
 
 let socket = null
 let selectedUser = null
 let pendingSelectedUserId = null
-const unreadUserIds = new Set()
 let notificationCloserBound = false
 let sessionWatchdogId = null
 let lastSessionCheckAt = 0
 let sessionCheckPromise = null
 let loginRedirecting = false
-
-const state = {
-  currentUserId: null,
-  users: [],
-  messages: new Map(),
-  historyMeta: new Map(),
-}
 
 export function initializeOnlineUsers() {
   updateNotificationState()
@@ -41,8 +34,9 @@ export function resetMessagesViewState() {
     rightSidebar.classList.remove("visible", "chat-fullscreen")
   }
 
-  selectedUser = null
-  pendingSelectedUserId = null
+  const reset = MessageModel.resetSelectionState()
+  selectedUser = reset.selectedUser
+  pendingSelectedUserId = reset.pendingSelectedUserId
 }
 
 export function ShowMessagesPage(url = new URL(window.location.href)) {
@@ -52,7 +46,7 @@ export function ShowMessagesPage(url = new URL(window.location.href)) {
     return
   }
 
-  pendingSelectedUserId = parseUserId(url.searchParams.get("user"))
+  pendingSelectedUserId = MessageModel.parseUserId(url.searchParams.get("user"))
 
   rightSidebar.classList.add("visible")
   navigate.setActiveNav("/messages")
@@ -79,8 +73,8 @@ async function ensureSessionValid({ throttleMs = 4000 } = {}) {
       const result = await AuthModel.checkSession()
       lastSessionCheckAt = Date.now()
       if (result.ok) {
-        const userId = parseUserId(result.data?.userID)
-        if (userId) state.currentUserId = userId
+        const userId = MessageModel.parseUserId(result.data?.userID)
+        if (userId) MessageModel.setCurrentUserId(userId)
         window.currentUser = result.data?.nickname || window.currentUser
         window.currentUserId = userId ?? window.currentUserId
         return true
@@ -97,11 +91,11 @@ async function ensureSessionValid({ throttleMs = 4000 } = {}) {
 
 function handleSessionInvalid() {
   disconnectMessagesSocket()
-  state.currentUserId = null
+  MessageModel.setCurrentUserId(null)
   window.currentUser = null
   window.currentUserId = null
 
-  unreadUserIds.clear()
+  MessageModel.clearUnreadUsers()
   updateNotificationState()
 
   const input = document.getElementById("messageInput")
@@ -181,45 +175,42 @@ function connectMessagesSocket() {
     const payload = JSON.parse(event.data)
     
     if (payload.type === "users") {
-      state.currentUserId = parseUserId(payload.data?.currentUserId) ?? state.currentUserId
-      state.users = (payload.data?.users || []).map(normalizeUser).filter(Boolean)
+      const state = MessageModel.getState()
+      MessageModel.setCurrentUserId(MessageModel.parseUserId(payload.data?.currentUserId) ?? state.currentUserId)
+      MessageModel.setUsers((payload.data?.users || []).map(MessageModel.normalizeUser).filter(Boolean))
       renderUsers()
       if (document.getElementById("chatList")) ensureSelectedUser()
       return
     }
 
     if (payload.type === "online" || payload.type === "offline") {
-      const id = parseUserId(payload.userId || payload.data?.userId || payload.id)
+      const id = MessageModel.parseUserId(payload.userId || payload.data?.userId || payload.id)
       const isOnline = payload.type === "online"
-      const existing = state.users.find(u => u.id === id)
-      if (existing) {
-        existing.online = isOnline
-      } else if (isOnline) {
-        state.users.push({ id, nickname: payload.nickname || `User ${id}`, online: true })
-      }
+      MessageModel.markUserOnline(id, payload.nickname, isOnline)
       renderUsers()
       return
     }
 
     if (payload.type === "message") {
-      const message = normalizeMessage(payload.data || payload)
+      const message = MessageModel.normalizeMessage(payload.data || payload)
       if (!message) return
+      const state = MessageModel.getState()
       // If a user signs up after we got the initial users snapshot, we may receive a message
       // from an unknown id (e.g. incognito tab). Add a minimal user entry so notifications
       // can still display the sender nickname.
       if (message.from != null && message.from !== state.currentUserId) {
         const exists = state.users.some((u) => u.id === message.from)
         if (!exists) {
-          state.users.push({
+          MessageModel.addUser({
             id: message.from,
             nickname: message.senderNickname || `User ${message.from}`,
             online: false,
           })
         }
       }
-      storeMessage(message)
+      MessageModel.storeMessage(message)
       if (message.from !== state.currentUserId && !isConversationOpen(message.from)) {
-        unreadUserIds.add(message.from)
+        MessageModel.addUnreadUser(message.from)
       }
       renderUsers()
       if (message.from === selectedUser?.id || message.to === selectedUser?.id) {
@@ -230,11 +221,11 @@ function connectMessagesSocket() {
     }
 
     if (payload.type === "history") {
-      const partnerId = parseUserId(payload.data?.userId)
+      const partnerId = MessageModel.parseUserId(payload.data?.userId)
       if (partnerId == null) return
       const offset = Number(payload.data?.offset) || 0
-      const messages = (payload.data?.items || []).map(normalizeMessage).filter(Boolean)
-      mergeHistoryPage(partnerId, messages, Boolean(payload.data?.hasMore))
+      const messages = (payload.data?.items || []).map(MessageModel.normalizeMessage).filter(Boolean)
+      MessageModel.mergeHistoryPage(partnerId, messages, Boolean(payload.data?.hasMore))
       renderUsers()
       if (selectedUser?.id === partnerId) {
         renderMessages({ preserveScroll: offset > 0, prependCount: messages.length })
@@ -254,17 +245,17 @@ function connectMessagesSocket() {
 }
 
 function renderUsers() {
-  const chatUsers = getSortedChatUsers()
+  const chatUsers = MessageModel.getSortedChatUsers()
   renderChatUsers(chatUsers)
   renderSidebarUsers(chatUsers)
 }
 
 function renderChatListItem(user) {
-  const history = ensureConversationState(user.id).items
+  const history = MessageModel.getConversationItems(user.id)
   const lastMessage = history[history.length - 1]
   const preview = lastMessage?.text || user.lastMessageText || "Start a conversation"
   const activeClass = selectedUser?.id === user.id ? " chat-item-active" : ""
-  const hasUnread = unreadUserIds.has(user.id) ? " unread-indicator" : ""
+  const hasUnread = MessageModel.getUnreadUserIds().has(user.id) ? " unread-indicator" : ""
 
   return `
     <div class="chat-item${activeClass}" data-user-id="${user.id}">
@@ -332,7 +323,8 @@ function bindUserSelection(container, users, { enterChat }) {
       renderMessages()
       loadConversationHistory(user.id)
       if (enterChat) enterConversationView()
-      else navigation.navigate(`/messages?user=${user.id}`)
+      else if (window.navigation?.navigate) window.navigation.navigate(`/messages?user=${user.id}`)
+      else window.location.href = `/messages?user=${user.id}`
     })
   })
 }
@@ -349,8 +341,8 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
     return
   }
 
-  const history = ensureConversationState(selectedUser.id).items
-  const currentId = state.currentUserId
+  const history = MessageModel.getConversationItems(selectedUser.id)
+  const currentId = MessageModel.getState().currentUserId
 
   if (!history.length) {
     messagesBox.innerHTML = `<div class="chat-empty">No messages yet, say hi.</div>`
@@ -470,7 +462,7 @@ function messageLayout() {
 
 /* Helper Functions */
 function ensureSelectedUser() {
-  const chatUsers = getSortedChatUsers()
+  const chatUsers = MessageModel.getSortedChatUsers()
   if (pendingSelectedUserId != null) {
     selectedUser = chatUsers.find((user) => user.id === pendingSelectedUserId) || selectedUser
     if (selectedUser?.id === pendingSelectedUserId) pendingSelectedUserId = null
@@ -494,46 +486,11 @@ function updateSelectedHeader() {
   input.disabled = false
 }
 
-function storeMessage(message) {
-  const partnerId = message.from === state.currentUserId ? message.to : message.from
-  const conversation = ensureConversationState(partnerId)
-  if (!conversation.items.some((item) => item.id === message.id)) {
-    conversation.items.push(message)
-  }
-  conversation.loaded = true
-  conversation.offset = conversation.items.length
-  state.messages.set(partnerId, conversation.items)
-}
-
-function ensureConversationState(userId) {
-  if (!state.historyMeta.has(userId)) {
-    state.historyMeta.set(userId, { loaded: false, loading: false, hasMore: true, offset: 0, items: [] })
-  }
-  return state.historyMeta.get(userId)
-}
-
 function loadConversationHistory(userId) {
-  const conversation = ensureConversationState(userId)
-  if (conversation.loading || (!conversation.hasMore && conversation.loaded)) return
+  if (!MessageModel.canLoadConversationHistory(userId)) return
   if (!socket || socket.readyState !== WebSocket.OPEN) return
-  conversation.loading = true
-  socket.send(JSON.stringify({ type: "history", receiver: userId, offset: conversation.offset, limit: 15 }))
-}
-
-function mergeHistoryPage(userId, messages, hasMore) {
-  const conversation = ensureConversationState(userId)
-  const existingIds = new Set(conversation.items.map(m => m.id))
-  const newMsgs = messages.filter(m => !existingIds.has(m.id))
-  conversation.items = [...newMsgs, ...conversation.items]
-  conversation.loading = false; conversation.hasMore = hasMore; conversation.offset = conversation.items.length
-}
-
-function getSortedChatUsers() {
-  return [...state.users.filter(u => u.id !== state.currentUserId)].sort((a, b) => {
-    const tA = ensureConversationState(a.id).items.slice(-1)[0]?.timestamp || 0
-    const tB = ensureConversationState(b.id).items.slice(-1)[0]?.timestamp || 0
-    return new Date(tB) - new Date(tA)
-  })
+  MessageModel.markConversationLoading(userId, true)
+  socket.send(JSON.stringify({ type: "history", receiver: userId, offset: MessageModel.getConversationOffset(userId), limit: 15 }))
 }
 
 function setConnectionState(text) {
@@ -549,29 +506,17 @@ function formatDateTime(v) {
   if (Number.isNaN(d.getTime())) return ""
   return d.toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
 }
-function parseUserId(v) { const id = Number(v); return Number.isInteger(id) && id > 0 ? id : null }
 function isConversationOpen(id) { return selectedUser?.id === id }
 
 function clearUnreadMessages(id = null) {
-  if (id) unreadUserIds.delete(id); else unreadUserIds.clear()
+  MessageModel.clearUnreadUsers(id)
   updateNotificationState()
 }
 
 function updateNotificationState() {
   const btn = document.getElementById("notificationBtn")
-  if (btn) btn.classList.toggle("has-unread", unreadUserIds.size > 0)
+  if (btn) btn.classList.toggle("has-unread", MessageModel.getUnreadUserIds().size > 0)
   renderNotificationPanel()
-}
-
-function normalizeUser(u) {
-  const id = parseUserId(u?.id); if (!id) return null
-  return { ...u, id, nickname: u.nickname || `User ${id}`, online: !!u.online }
-}
-
-function normalizeMessage(m) {
-  const from = parseUserId(m?.from), to = parseUserId(m?.to)
-  if (!from || !to) return null
-  return { ...m, from, to, timestamp: m.timestamp || m.time }
 }
 
 function throttle(cb, d) {
@@ -628,7 +573,7 @@ function renderNotificationPanel() {
 
   panel.querySelectorAll(".notification-item[data-user-id]").forEach((node) => {
     node.addEventListener("click", () => {
-      const userId = parseUserId(node.dataset.userId)
+      const userId = MessageModel.parseUserId(node.dataset.userId)
       if (!userId) return
 
       const wrapper = document.getElementById("notificationWrapper")
@@ -644,12 +589,12 @@ function renderNotificationPanel() {
 }
 
 function renderNotificationItems() {
-  const unread = [...unreadUserIds]
+  const unread = [...MessageModel.getUnreadUserIds()]
   if (!unread.length) return `<div class="notification-empty">No new messages.</div>`
 
   const items = unread
     .map((id) => {
-      const user = state.users.find((u) => u.id === id) || { id, nickname: `User ${id}` }
+      const user = MessageModel.findUserById(id) || { id, nickname: `User ${id}` }
 
       return `
         <button class="notification-item" type="button" data-user-id="${id}">

@@ -32,7 +32,7 @@ export function buildHomePage() {
   const bg = document.createElement("img");
   bg.className = "background";
   bg.id = "home-back";
-  bg.src = "static/img/back.png";
+  bg.src = "/static/img/back.png";
 
   _homeDom = { container, rightSidebar, bg };
 }
@@ -115,11 +115,11 @@ export function applyTheme(theme) {
   if (theme === "dark") {
     if (light) light.style.display = "flex";
     if (dark) dark.style.display = "none";
-    if (logo) logo.src = "static/img/logo-remove.png";
-    if (back) back.src = "static/img/darkback.png";
+    if (logo) logo.src = "/static/img/logo-remove.png";
+    if (back) back.src = "/static/img/darkback.png";
 
     
-    if (chat){chat.style.background = "url('static/img/darkback.png')";
+    if (chat){chat.style.background = "url('/static/img/darkback.png')";
       chat.style.backgroundSize= "cover"
 
     }
@@ -128,12 +128,12 @@ export function applyTheme(theme) {
   } else {
     if (dark) dark.style.display = "flex";
     if (light) light.style.display = "none";
-    if (logo) logo.src = "static/img/logo-remove.png";
+    if (logo) logo.src = "/static/img/logo-remove.png";
     if (chat){
-      chat.style.background = "url('static/img/back.png')";
+      chat.style.background = "url('/static/img/back.png')";
       chat.style.backgroundSize= "cover"
     }
-    if (back) back.src = "static/img/back.png";
+    if (back) back.src = "/static/img/back.png";
     document.body.classList.remove("dark-mode");
     document.body.classList.add("light-mode");
   }

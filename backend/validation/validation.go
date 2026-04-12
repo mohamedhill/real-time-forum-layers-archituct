@@ -36,3 +36,13 @@ func CheckValidity(user models.User) string {
 	}
 	return ""
 }
+
+
+func Contains(slice []string, target string) bool {
+	for _, v := range slice {
+		if v == target {
+			return true
+		}
+	}
+	return false
+}

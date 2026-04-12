@@ -63,8 +63,7 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := 10
-	offset := 0
+	limit := 1000
 
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		value, err := strconv.Atoi(raw)
@@ -75,16 +74,7 @@ func (h *PostHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 		limit = value
 	}
 
-	if raw := r.URL.Query().Get("offset"); raw != "" {
-		value, err := strconv.Atoi(raw)
-		if err != nil || value < 0 {
-			writeError(w, http.StatusBadRequest, "invalid offset")
-			return
-		}
-		offset = value
-	}
-
-	posts, err := h.postService.GetAllPosts(limit, offset)
+	posts, err := h.postService.GetAllPosts(limit)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
 		return

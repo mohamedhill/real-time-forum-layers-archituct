@@ -7,6 +7,8 @@ import (
 
 	"forum/backend/models"
 	"forum/backend/repository"
+	"forum/backend/validation"
+
 )
 
 // PostService handles post-related business logic
@@ -31,8 +33,14 @@ func (s *PostService) CreatePost(input models.PostInput, userID int, nickname st
 	if err != nil {
 		return nil, ErrInternal
 	}
+	
+	categories := []string{"Technology","Lifestyle","Gaming","Sports","Music","Movies","Food","Travel","Other"}
+	
 
 	for _, category := range input.Categories {
+		if !validation.Contains(categories,category){
+			return nil , errors.New("category not valid")
+		}
 		if strings.TrimSpace(category) == "" {
 			return nil, errors.New("category cannot be empty")
 		}
@@ -50,16 +58,13 @@ func (s *PostService) CreatePost(input models.PostInput, userID int, nickname st
 	}, nil
 }
 
-// GetAllPosts returns paginated posts
-func (s *PostService) GetAllPosts(limit int, offset int) ([]models.Post, error) {
+// GetAllPosts returns posts ordered by newest first.
+func (s *PostService) GetAllPosts(limit int) ([]models.Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
-	}
 
-	posts, err := s.postRepo.GetAll(limit, offset)
+	posts, err := s.postRepo.GetAll(limit)
 	if err != nil {
 		return nil, ErrInternal
 	}

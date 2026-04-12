@@ -1,9 +1,16 @@
 import * as HomeView from "../views/HomeView.js";
 import * as PostController from "./PostController.js";
 import * as ReactionController from "./ReactionController.js";
+import * as CommentController from "./CommentController.js";
 import * as AuthController from "./AuthController.js";
 import * as navigate from "../navigation/Navigation.js";
 import * as MessagesController from "./MessagesController.js";
+
+function bindClickOnce(element, key, handler) {
+  if (!element || element.dataset[key] === "true") return;
+  element.dataset[key] = "true";
+  element.addEventListener("click", handler);
+}
 
 function bindPostActionDelegation() {
   const postsContainer = document.getElementById("posts-container");
@@ -20,6 +27,11 @@ function bindPostActionDelegation() {
     const postId = postCard.dataset.postId;
     const action = btn.dataset.action;
     if (!postId || !action) return;
+
+    if (action === "comment") {
+      CommentController.toggleCommentSection(postId);
+      return;
+    }
 
     ReactionController.actionMap[action]?.(postId);
   });
@@ -43,26 +55,22 @@ export function initializeHomeShell(activeRoute = "/") {
   HomeView.applyTheme(savedTheme);
 
   document.querySelectorAll("i[data-theme]").forEach((icon) => {
-    icon.addEventListener("click", () =>
+    bindClickOnce(icon, "themeBound", () =>
       HomeView.applyTheme(icon.getAttribute("data-theme"))
     );
   });
 
   const logoutBtn = document.getElementById("showloginbtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
+  bindClickOnce(logoutBtn, "logoutBound", (e) => {
       e.preventDefault();
       AuthController.handleLogout();
-    });
-  }
+  });
 
   const profileBtn = document.getElementById("showprofilebtn");
-  if (profileBtn) {
-    profileBtn.addEventListener("click", (e) => {
+  bindClickOnce(profileBtn, "profileBound", (e) => {
       e.preventDefault();
       navigation.navigate("/profile");
-    });
-  }
+  });
 
   const profileWrapper = document.getElementById("customProfileWrapper");
   if (profileWrapper) {
@@ -97,20 +105,20 @@ export function showHomePage() {
   const writeSomethingBtn = document.getElementById("writesomething");
   const closeBtn = document.getElementById("close-btn");
 
-  creatPostBtn?.addEventListener("click", (e) => {
+  bindClickOnce(creatPostBtn, "createPostBound", (e) => {
     e.stopPropagation();
     HomeView.showCreatePostModal();
   });
 
-  writeSomethingBtn?.addEventListener("click", (e) => {
+  bindClickOnce(writeSomethingBtn, "writeSomethingBound", (e) => {
     e.stopPropagation();
     HomeView.showCreatePostModal();
   });
 
-  closeBtn?.addEventListener("click", () => HomeView.hideCreatePostModal());
+  bindClickOnce(closeBtn, "closeModalBound", () => HomeView.hideCreatePostModal());
 
   document.querySelectorAll(".category-btn").forEach((btn) => {
-    btn.addEventListener("click", () => btn.classList.toggle("active"));
+    bindClickOnce(btn, "categoryBound", () => btn.classList.toggle("active"));
   });
 
 }

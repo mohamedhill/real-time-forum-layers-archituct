@@ -177,13 +177,13 @@ export function renderAuthPage() {
   const logo = document.createElement("img");
   logo.setAttribute("draggable", "false");
   logo.id = "logo";
-  logo.src = "static/img/logo-remove.png";
+  logo.src = "/static/img/logo-remove.png";
   hrefLogo.appendChild(logo);
   header.appendChild(hrefLogo);
 
   const bg = document.createElement("img");
   bg.className = "backgroundlogin";
-  bg.src = "static/img/back.png";
+  bg.src = "/static/img/back.png";
 
   const container = document.createElement("div");
   container.className = "login container grid";

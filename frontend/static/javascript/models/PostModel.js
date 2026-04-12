@@ -5,10 +5,9 @@
 
 import { parseJSONResponse } from "../helpers/api.js";
 
-export async function fetchPosts({ limit = 10, offset = 0 } = {}) {
+export async function fetchPosts({ limit = 1000 } = {}) {
   const params = new URLSearchParams({
     limit: String(limit),
-    offset: String(offset),
   });
   const res = await fetch(`/posts?${params.toString()}`);
   return parseJSONResponse(res, "Failed to fetch posts");

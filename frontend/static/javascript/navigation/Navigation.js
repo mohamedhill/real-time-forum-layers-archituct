@@ -17,6 +17,8 @@
 
 export function initNavigation() {
   document.querySelectorAll(".nav-item,.nav-bottum").forEach(btn => {
+    if (btn.dataset.navBound === "true") return
+    btn.dataset.navBound = "true"
    
     btn.addEventListener("click", () => {
       
@@ -28,6 +30,5 @@ export function initNavigation() {
     })
   })
 }
-
 
 

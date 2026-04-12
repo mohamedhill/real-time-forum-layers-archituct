@@ -3,22 +3,22 @@ import * as HomeView from "../views/HomeView.js";
 import * as ReactionController from "./ReactionController.js";
 import * as CommentController from "./CommentController.js";
 
-const POSTS_PAGE_SIZE = 10
-
-const postsFeedState = {
-  offset: 0,
-  loading: false,
-  hasMore: true,
-  scrollElement: null,
-  scrollHandler: null,
-}
+const POSTS_PAGE_SIZE = 1000
 
 //  Load Posts 
 
 export async function loadPosts() {
-  resetPostsFeed()
-  attachInfiniteScroll()
-  await loadNextPostsPage({ replace: true })
+  const posts = await PostModel.fetchPosts({
+    limit: POSTS_PAGE_SIZE,
+  })
+
+  if (!posts?.length) {
+    HomeView.renderEmptyPosts("No posts yet")
+    return
+  }
+
+  HomeView.renderPostList(posts)
+  hydratePostInteractions(posts)
 }
 
 export async function loadlikedposts() {
@@ -48,46 +48,11 @@ export async function loadsavedposts() {
   hydratePostInteractions(posts);
 }
 
-async function loadNextPostsPage({ replace = false } = {}) {
-  if (postsFeedState.loading || !postsFeedState.hasMore) return
-
-  postsFeedState.loading = true
-
-  try {
-    const posts = await PostModel.fetchPosts({
-      limit: POSTS_PAGE_SIZE,
-      offset: postsFeedState.offset,
-    })
-
-    if (!posts) return
-
-    if (!posts.length) {
-      postsFeedState.hasMore = false
-      return
-    }
-
-    if (replace) HomeView.renderPostList(posts)
-    else HomeView.appendPostList(posts)
-
-    hydrateRenderedPosts(posts)
-
-    postsFeedState.offset += posts.length
-    postsFeedState.hasMore = hasMorePosts(posts.length)
-  } finally {
-    postsFeedState.loading = false
-  }
-}
-
-function hasMorePosts(pageLength) {
-  return pageLength === POSTS_PAGE_SIZE
-}
-
 function hydrateRenderedPosts(posts) {
   posts.forEach((post) => {
     ReactionController.loadCountsForPost(post.id)
   })
 
-  setupCommentListeners()
   CommentController.loadCommentCountsForAllPosts()
 }
 
@@ -95,35 +60,8 @@ export function hydratePostInteractions(posts) {
   hydrateRenderedPosts(posts || [])
 }
 
-function resetPostsFeed() {
-  postsFeedState.offset = 0
-  postsFeedState.loading = false
-  postsFeedState.hasMore = true
-}
-
-function attachInfiniteScroll() {
-  detachInfiniteScroll()
-
-  const content = document.querySelector(".content")
-  if (!content) return
-
-  postsFeedState.scrollElement = content
-  postsFeedState.scrollHandler = async () => {
-    const remaining = content.scrollHeight - content.scrollTop - content.clientHeight
-    if (remaining > 180) return
-    await loadNextPostsPage()
-  }
-
-  content.addEventListener("scroll", postsFeedState.scrollHandler)
-}
-
 function detachInfiniteScroll() {
-  if (postsFeedState.scrollElement && postsFeedState.scrollHandler) {
-    postsFeedState.scrollElement.removeEventListener("scroll", postsFeedState.scrollHandler)
-  }
-
-  postsFeedState.scrollElement = null
-  postsFeedState.scrollHandler = null
+  return
 }
 
 //  Create Post 
@@ -163,9 +101,7 @@ export async function handleCreatePost() {
         id: data.id,
       });
       ReactionController.loadCountsForPost(data.id)
-      setupCommentListeners()
       CommentController.loadCommentCountsForAllPosts()
-      if (postsFeedState.offset > 0) postsFeedState.offset += 1
       HomeView.hideCreatePostModal();
     }
   } catch (err) {
@@ -173,30 +109,11 @@ export async function handleCreatePost() {
   }
 }
 
-// Setup comment event listeners for all post cards
-function setupCommentListeners() {
-  document.querySelectorAll(".post-card").forEach((card) => {
-    
-    
-    
-    const commentBtn = card.querySelector('.action-btn[data-action="comment"]');
-    if (commentBtn) {
-      commentBtn.removeEventListener("click", handleCommentBtnClick);
-      commentBtn.addEventListener("click", handleCommentBtnClick);
-    }
-  });
-}
-
-function  handleCommentBtnClick(event) {
-  const postCard = event.target.closest(".post-card");
-  if (!postCard) return;
-  
-  const postId = postCard.dataset.postId;
-  CommentController.toggleCommentSection(postId);
-}
-
 // Add event listener delegation for dynamically created comment submit buttons
 export function setupCommentFormListeners() {
+  if (document.body.dataset.commentFormListenersBound === "true") return;
+  document.body.dataset.commentFormListenersBound = "true";
+
   document.addEventListener("click", (event) => {
     if (event.target.classList.contains("comment-submit-btn")) {
       handleCommentSubmit(event);

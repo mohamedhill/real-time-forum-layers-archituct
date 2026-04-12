@@ -42,8 +42,8 @@ func (r *PostRepository) AddCategory(postID int64, name string) error {
 	return err
 }
 
-// GetAll returns posts ordered by newest first with pagination
-func (r *PostRepository) GetAll(limit int, offset int) ([]models.Post, error) {
+// GetAll returns posts ordered by newest first.
+func (r *PostRepository) GetAll(limit int) ([]models.Post, error) {
 	rows, err := db.DataBase.Query(`
         SELECT 
             posts.id, 
@@ -58,8 +58,8 @@ func (r *PostRepository) GetAll(limit int, offset int) ([]models.Post, error) {
         LEFT JOIN Category ON PostCategory.ID_Category = Category.ID
         GROUP BY posts.id
         ORDER BY posts.time DESC
-        LIMIT ? OFFSET ?
-    `, limit, offset)
+        LIMIT ?
+    `, limit)
 	if err != nil {
 		return nil, err
 	}

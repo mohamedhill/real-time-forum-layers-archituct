@@ -9,9 +9,10 @@ export function toggleCommentSection(postId) {
   let commentSection = postCard.querySelector(".comment-section");
   
   if (commentSection) {
-    commentSection.style.display = commentSection.style.display === "none" ? "block" : "none";
+    commentSection.classList.toggle("show");
   } else {
     commentSection = HomeView.buildCommentSection(postId);
+    commentSection.classList.add("show");
     postCard.appendChild(commentSection);
     loadCommentsForPost(postId);
   }

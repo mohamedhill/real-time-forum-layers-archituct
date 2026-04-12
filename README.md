@@ -1,235 +1,312 @@
-# Real-Time Forum Layers Architecture
+# Real-Time Forum
 
-This project is a small forum application built to show a layered architecture from end to end.
+A full-stack forum application built with a layered architecture.
 
-It combines:
+The project combines:
 - a Go backend
 - a vanilla JavaScript frontend
 - SQLite for persistence
 - cookie-based session authentication
-- WebSockets for real-time messaging and online presence
+- WebSockets for real-time chat and presence
 
-The main idea is to keep responsibilities separated:
-- the frontend handles rendering, navigation, and user interactions
-- handlers translate HTTP requests into application actions
-- services contain business logic
-- repositories talk to the database
+The main goal of this codebase is not only to provide forum features, but also to show how to organize a project with clear separation of concerns across backend and frontend layers.
 
-## Project Idea
+## Features
 
-The application lets users:
+Users can:
 - register and log in
-- create posts
-- react to posts with like, dislike, and save
+- create posts with categories
+- like, dislike, and save posts
 - add and delete comments
-- view liked and saved posts
-- view a profile summary and their own posts
+- view liked posts
+- view saved posts
+- view a profile summary
 - chat with other users in real time
+- load message history in pages
+- see user online and offline presence
 
-It is not just a forum UI. The codebase is also meant to represent how features can be organized in layers instead of placing everything inside handlers or frontend event files.
+## Tech Stack
+
+Backend:
+- Go `1.24`
+- `net/http`
+- `github.com/mattn/go-sqlite3`
+- `github.com/gorilla/websocket`
+
+Frontend:
+- vanilla JavaScript
+- custom SPA-style router
+- modular controllers, models, and views
+
+Database:
+- SQLite
 
 ## Architecture
 
-The backend follows a layered flow:
+The backend follows this flow:
 
 `Route -> Middleware -> Handler -> Service -> Repository -> Database`
 
-Each layer has a different role.
+The frontend follows this flow:
 
-### 1. Routes
+`Router -> Controller -> Model -> View`
 
-Files:
-- [backend/routes/routing.go](real-time-forum-layers-archituct/backend/routes/routing.go)
+This keeps responsibilities separated:
+- routes compose the application
+- middleware handles cross-cutting concerns like auth and rate limiting
+- handlers translate HTTP and WebSocket requests into application actions
+- services contain business rules
+- repositories isolate SQL access
+- frontend controllers coordinate page behavior
+- frontend models handle data access and client-side state
+- frontend views render UI
 
-The routing layer:
+## Project Structure
+
+```text
+backend/
+  cmd/
+    main.go
+  database/
+    database.go
+  db/
+    schema.sql
+  handlers/
+    checksession.go
+    comment_handler.go
+    creatposthandler.go
+    helpers.go
+    login.go
+    logout.go
+    messagesHandler.go
+    profile_handler.go
+    reaction_handler.go
+    register.go
+    servefiles.go
+  middleware/
+    rate_limit.go
+    session_auth.go
+  models/
+    models.go
+  repository/
+    comment_repository.go
+    message_repository.go
+    post_repository.go
+    reaction_repository.go
+    user_repository.go
+  routes/
+    routing.go
+  service/
+    action_service.go
+    auth_service.go
+    comment_service.go
+    message_service.go
+    post_service.go
+    profile_service.go
+    session_service.go
+  validation/
+    validation.go
+
+frontend/
+  index.html
+  static/
+    css/
+    img/
+    javascript/
+      components/
+      controllers/
+      helpers/
+      models/
+      navigation/
+      router/
+      views/
+    main.js
+```
+
+## Backend Layers
+
+### Routes
+
+File:
+- [backend/routes/routing.go](/home/mhilli/gitea/real-time-forum/backend/routes/routing.go)
+
+This is the backend composition root. It:
 - creates repositories
 - creates services
 - creates handlers
-- wires routes to handlers
-- applies middleware such as rate limiting and session protection
+- wires endpoints
+- applies session and rate-limit middleware
 
-This file is the composition root of the backend.
-
-### 2. Middleware
+### Middleware
 
 Files:
-- [backend/middleware/session_auth.go](real-time-forum-layers-archituct/backend/middleware/session_auth.go)
-- [backend/middleware/rate_limit.go](real-time-forum-layers-archituct/backend/middleware/rate_limit.go)
+- [backend/middleware/session_auth.go](/home/mhilli/gitea/real-time-forum/backend/middleware/session_auth.go)
+- [backend/middleware/rate_limit.go](/home/mhilli/gitea/real-time-forum/backend/middleware/rate_limit.go)
 
-Middleware runs before handlers.
+Responsibilities:
+- validate session cookies
+- inject authenticated user info into request context
+- protect private routes
+- throttle requests
 
-Important logic:
-- `RequireSession(...)` validates the session cookie
-- if the session is valid, it stores the authenticated user in request context
-- protected handlers do not need to validate the session again
-
-That means session checking is centralized in middleware.
-
-### 3. Handlers
+### Handlers
 
 Files:
-- [backend/handlers/login.go](real-time-forum-layers-archituct/backend/handlers/login.go)
-- [backend/handlers/register.go](real-time-forum-layers-archituct/backend/handlers/register.go)
-- [backend/handlers/creatposthandler.go](real-time-forum-layers-archituct/backend/handlers/creatposthandler.go)
-- [backend/handlers/comment_handler.go](real-time-forum-layers-archituct/backend/handlers/comment_handler.go)
-- [backend/handlers/reaction_handler.go](real-time-forum-layers-archituct/backend/handlers/reaction_handler.go)
-- [backend/handlers/profile_handler.go](real-time-forum-layers-archituct/backend/handlers/profile_handler.go)
-- [backend/handlers/messagesHandler.go](real-time-forum-layers-archituct/backend/handlers/messagesHandler.go)
+- [backend/handlers/login.go](/home/mhilli/gitea/real-time-forum/backend/handlers/login.go)
+- [backend/handlers/register.go](/home/mhilli/gitea/real-time-forum/backend/handlers/register.go)
+- [backend/handlers/logout.go](/home/mhilli/gitea/real-time-forum/backend/handlers/logout.go)
+- [backend/handlers/checksession.go](/home/mhilli/gitea/real-time-forum/backend/handlers/checksession.go)
+- [backend/handlers/creatposthandler.go](/home/mhilli/gitea/real-time-forum/backend/handlers/creatposthandler.go)
+- [backend/handlers/comment_handler.go](/home/mhilli/gitea/real-time-forum/backend/handlers/comment_handler.go)
+- [backend/handlers/reaction_handler.go](/home/mhilli/gitea/real-time-forum/backend/handlers/reaction_handler.go)
+- [backend/handlers/profile_handler.go](/home/mhilli/gitea/real-time-forum/backend/handlers/profile_handler.go)
+- [backend/handlers/messagesHandler.go](/home/mhilli/gitea/real-time-forum/backend/handlers/messagesHandler.go)
 
-Handlers are responsible for:
-- checking HTTP method
-- decoding request data
-- reading authenticated user from middleware context when needed
-- calling the right service
-- returning JSON responses and status codes
+Responsibilities:
+- validate request method
+- decode inputs
+- read authenticated user from context when needed
+- call services
+- write JSON or upgrade to WebSocket
 
-Handlers should not contain database queries directly.
-
-### 4. Services
-
-Files:
-- [backend/service/auth_service.go](real-time-forum-layers-archituct/backend/service/auth_service.go)
-- [backend/service/session_service.go](real-time-forum-layers-archituct/backend/service/session_service.go)
-- [backend/service/post_service.go](real-time-forum-layers-archituct/backend/service/post_service.go)
-- [backend/service/comment_service.go](real-time-forum-layers-archituct/backend/service/comment_service.go)
-- [backend/service/action_service.go](real-time-forum-layers-archituct/backend/service/action_service.go)
-- [backend/service/profile_service.go](real-time-forum-layers-archituct/backend/service/profile_service.go)
-
-Services contain application logic such as:
-- validating login and registration behavior
-- toggling reactions correctly
-- creating posts with category rules
-- assembling a profile summary with user posts
-
-This layer is where the business rules live.
-
-### 5. Repositories
+### Services
 
 Files:
-- [backend/repository/user_repository.go](real-time-forum-layers-archituct/backend/repository/user_repository.go)
-- [backend/repository/post_repository.go](real-time-forum-layers-archituct/backend/repository/post_repository.go)
-- [backend/repository/comment_repository.go](real-time-forum-layers-archituct/backend/repository/comment_repository.go)
-- [backend/repository/reaction_repository.go](real-time-forum-layers-archituct/backend/repository/reaction_repository.go)
+- [backend/service/auth_service.go](/home/mhilli/gitea/real-time-forum/backend/service/auth_service.go)
+- [backend/service/session_service.go](/home/mhilli/gitea/real-time-forum/backend/service/session_service.go)
+- [backend/service/post_service.go](/home/mhilli/gitea/real-time-forum/backend/service/post_service.go)
+- [backend/service/comment_service.go](/home/mhilli/gitea/real-time-forum/backend/service/comment_service.go)
+- [backend/service/action_service.go](/home/mhilli/gitea/real-time-forum/backend/service/action_service.go)
+- [backend/service/profile_service.go](/home/mhilli/gitea/real-time-forum/backend/service/profile_service.go)
+- [backend/service/message_service.go](/home/mhilli/gitea/real-time-forum/backend/service/message_service.go)
 
-Repositories isolate SQL access.
+Responsibilities:
+- validate and create users
+- validate sessions
+- create posts and enforce content rules
+- toggle reactions with business rules
+- create and delete comments
+- assemble profile summaries
+- build chat user snapshots, history payloads, and outgoing message payloads
 
-They are responsible for:
-- querying and updating SQLite
-- returning plain model data
-- hiding table details from handlers and most service code
-
-### 6. Models
+### Repositories
 
 Files:
-- [backend/models/models.go](real-time-forum-layers-archituct/backend/models/models.go)
+- [backend/repository/user_repository.go](/home/mhilli/gitea/real-time-forum/backend/repository/user_repository.go)
+- [backend/repository/post_repository.go](/home/mhilli/gitea/real-time-forum/backend/repository/post_repository.go)
+- [backend/repository/comment_repository.go](/home/mhilli/gitea/real-time-forum/backend/repository/comment_repository.go)
+- [backend/repository/reaction_repository.go](/home/mhilli/gitea/real-time-forum/backend/repository/reaction_repository.go)
+- [backend/repository/message_repository.go](/home/mhilli/gitea/real-time-forum/backend/repository/message_repository.go)
 
-Models define shared data structures such as:
+Responsibilities:
+- run SQL queries
+- return plain model data
+- hide schema details from handlers
+
+### Models
+
+File:
+- [backend/models/models.go](/home/mhilli/gitea/real-time-forum/backend/models/models.go)
+
+Contains shared backend data such as:
 - `User`
 - `Post`
 - `Comment`
 - `ReactionState`
 - `ProfileSummary`
+- `ChatMessage`
+- `ChatUser`
 
-## Frontend Structure
-
-The frontend follows a similar separation, but for UI concerns:
-
-`Router -> Controller -> Model -> View`
+## Frontend Layers
 
 ### Router
 
 Files:
-- [frontend/static/main.js](real-time-forum-layers-archituct/frontend/static/main.js)
-- [frontend/static/javascript/router/router.js](real-time-forum-layers-archituct/frontend/static/javascript/router/router.js)
+- [frontend/static/main.js](/home/mhilli/gitea/real-time-forum/frontend/static/main.js)
+- [frontend/static/javascript/router/router.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/router/router.js)
 
-The router:
-- listens to navigation events
-- matches paths
-- calls the correct controller
-- protects routes with `AuthController.guardRoute(...)`
+Responsibilities:
+- listen for route changes
+- map paths to controller functions
+- guard private pages through `AuthController.guardRoute(...)`
 
 ### Controllers
 
 Files:
-- [frontend/static/javascript/controllers/AuthController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/AuthController.js)
-- [frontend/static/javascript/controllers/HomeController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/HomeController.js)
-- [frontend/static/javascript/controllers/PostController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/PostController.js)
-- [frontend/static/javascript/controllers/CommentController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/CommentController.js)
-- [frontend/static/javascript/controllers/ReactionController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/ReactionController.js)
-- [frontend/static/javascript/controllers/ProfileController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/ProfileController.js)
-- [frontend/static/javascript/controllers/MessagesController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/MessagesController.js)
+- [frontend/static/javascript/controllers/AuthController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/AuthController.js)
+- [frontend/static/javascript/controllers/HomeController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/HomeController.js)
+- [frontend/static/javascript/controllers/PostController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/PostController.js)
+- [frontend/static/javascript/controllers/CommentController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/CommentController.js)
+- [frontend/static/javascript/controllers/ReactionController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/ReactionController.js)
+- [frontend/static/javascript/controllers/LikedController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/LikedController.js)
+- [frontend/static/javascript/controllers/SavedController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/SavedController.js)
+- [frontend/static/javascript/controllers/ProfileController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/ProfileController.js)
+- [frontend/static/javascript/controllers/MessagesController.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/controllers/MessagesController.js)
 
-Controllers:
-- react to UI events
-- call models for API data
-- tell views what to render
-- coordinate page-level behavior
+Responsibilities:
+- respond to user actions
+- coordinate page behavior
+- call frontend models
+- trigger view rendering
+- manage UI state transitions
 
 ### Models
 
 Files:
-- [frontend/static/javascript/models/AuthModel.js](real-time-forum-layers-archituct/frontend/static/javascript/models/AuthModel.js)
-- [frontend/static/javascript/models/PostModel.js](real-time-forum-layers-archituct/frontend/static/javascript/models/PostModel.js)
-- [frontend/static/javascript/models/CommentModel.js](real-time-forum-layers-archituct/frontend/static/javascript/models/CommentModel.js)
-- [frontend/static/javascript/models/ReactionModel.js](real-time-forum-layers-archituct/frontend/static/javascript/models/ReactionModel.js)
-- [frontend/static/javascript/models/ProfileModel.js](real-time-forum-layers-archituct/frontend/static/javascript/models/ProfileModel.js)
+- [frontend/static/javascript/models/AuthModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/AuthModel.js)
+- [frontend/static/javascript/models/PostModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/PostModel.js)
+- [frontend/static/javascript/models/CommentModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/CommentModel.js)
+- [frontend/static/javascript/models/ReactionModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/ReactionModel.js)
+- [frontend/static/javascript/models/ProfileModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/ProfileModel.js)
+- [frontend/static/javascript/models/MessageModel.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/models/MessageModel.js)
 
-Frontend models are thin API clients.
+Responsibilities:
+- call backend APIs
+- parse response data
+- hold message-specific client state
+- normalize chat users and messages
 
-They:
-- send `fetch` requests
-- normalize API responses
-- avoid touching the DOM
-
-### Views
+### Views and UI Helpers
 
 Files:
-- [frontend/static/javascript/views/AuthView.js](real-time-forum-layers-archituct/frontend/static/javascript/views/AuthView.js)
-- [frontend/static/javascript/views/HomeView.js](real-time-forum-layers-archituct/frontend/static/javascript/views/HomeView.js)
-- [frontend/static/javascript/components/componnets.js](real-time-forum-layers-archituct/frontend/static/javascript/components/componnets.js)
+- [frontend/static/javascript/views/AuthView.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/views/AuthView.js)
+- [frontend/static/javascript/views/HomeView.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/views/HomeView.js)
+- [frontend/static/javascript/components/componnets.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/components/componnets.js)
+- [frontend/static/javascript/navigation/Navigation.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/navigation/Navigation.js)
+- [frontend/static/javascript/helpers/api.js](/home/mhilli/gitea/real-time-forum/frontend/static/javascript/helpers/api.js)
 
-Views are responsible for:
-- building DOM structures
-- rendering posts, comments, and profile UI
-- keeping layout and markup concerns out of API code
+Responsibilities:
+- build markup
+- update DOM sections
+- render home, auth, posts, comments, and chat UI
+- provide shared UI helpers
 
-## Core Logic
+## Main Application Flows
 
-### Authentication and Session Logic
+### Authentication
 
 Flow:
 1. The user submits login or registration data.
-2. The backend validates credentials or user data.
-3. On success, the backend creates a session token and stores it in the `users` table.
-4. The backend sends the token in an HTTP-only cookie.
-5. Protected routes use middleware to validate the session cookie.
-6. Middleware injects the authenticated user into request context.
-7. Handlers read the authenticated user from context.
+2. The frontend calls an auth model method.
+3. The backend handler forwards the input to `AuthService`.
+4. The service validates the request and delegates persistence to `UserRepository`.
+5. A session token is stored and returned in a cookie.
+6. Protected routes are later validated by session middleware.
 
-Important design choice:
-- session validation is centralized in middleware, not repeated in every handler
+Important detail:
+- the frontend also checks session state with `/check-session` to guard private routes in the SPA
 
-Frontend route protection:
-- [AuthController.js](real-time-forum-layers-archituct/frontend/static/javascript/controllers/AuthController.js) uses `guardRoute(...)`
-- `guardRoute(...)` calls `/check-session`
-- if the session is valid, it stores `window.currentUser` and `window.currentUserId`
-- if not valid, protected pages redirect to `/login`
-
-### Post Logic
+### Posts
 
 Flow:
-1. The user creates a post in the modal.
-2. The frontend sends `title`, `content`, and selected categories.
-3. The backend service validates the post.
-4. The post is inserted into `posts`.
-5. Categories are linked through `Category` and `PostCategory`.
-6. The frontend inserts the new post card into the page immediately after success.
+1. The user opens the post form and submits title, content, and categories.
+2. `PostController` calls `PostModel.createPost(...)`.
+3. `PostHandler` passes the request to `PostService`.
+4. `PostService` validates required fields, limits, and categories.
+5. `PostRepository` inserts the post and category relations.
+6. The frontend updates the post list.
 
-Home feed logic:
-- the main feed supports pagination with limit and offset
-- liked posts and saved posts are separate filtered views
-
-### Reaction Logic
+### Reactions
 
 Supported reactions:
 - `like`
@@ -239,51 +316,77 @@ Supported reactions:
 Rules:
 - `like` and `dislike` are mutually exclusive
 - `save` is independent
+- clicking the same reaction again toggles it off
 
-The reaction service handles the rule set:
-- if a user likes a post they already liked, it removes the like
-- if they dislike after liking, the old opposite reaction is removed first
-- save acts as a simple toggle
-
-### Comment Logic
+### Comments
 
 Comment features:
 - create comment
-- list comments by post
-- fetch comment count
-- delete comment
+- list comments for a post
+- fetch comment counts
+- delete owned comments
 
-The delete logic uses the authenticated user so only the correct owner can remove a comment.
+The comment service validates comment content and the repository handles the actual SQL.
 
-### Profile Logic
+### Profile
 
-The profile page combines:
+The profile page returns:
 - nickname
 - email
-- counts for posts, liked posts, and saved posts
+- post count
+- liked count
+- saved count
 - the authenticated user’s own posts
 
-This logic is assembled in the backend profile service, then rendered in the frontend profile page using the same post card UI used by the main feed.
+That data is assembled in `ProfileService` and rendered on the frontend profile page.
 
-### Real-Time Messaging Logic
+### Real-Time Messaging
 
-The chat system uses WebSockets:
-- clients connect to `/ws/messages`
-- middleware ensures only authenticated users can connect
-- active connections are stored in memory
-- user online/offline state is broadcast
-- direct messages are stored in the database and pushed in real time
-- history can be requested in pages
+The chat system uses WebSockets at `/ws/messages`.
 
-This gives the app:
-- online user presence
-- direct user-to-user messages
-- conversation history loading
+It supports:
+- authenticated WebSocket connections
+- active in-memory connection tracking
+- online and offline presence broadcast
+- direct message delivery
+- storing messages in SQLite
+- paginated conversation history
+- unread message tracking in the frontend
 
-## Database Design
+Current message layering:
+- `MessageHandler` manages WebSocket request and connection flow
+- `MessageService` contains chat business logic and payload building
+- `MessageRepository` performs message and chat-related SQL queries
+- `MessageModel.js` manages message state on the frontend
+- `MessagesController.js` coordinates socket events and chat UI behavior
+
+## Routes
+
+Main HTTP routes:
+- `POST /registerAuth`
+- `POST /loginAuth`
+- `POST /logout`
+- `GET /check-session`
+- `POST /addpost`
+- `GET /posts`
+- `POST /react`
+- `GET /reaction-counts`
+- `POST /addcomment`
+- `GET /comments`
+- `GET /comment-count`
+- `DELETE /deletecomment`
+- `GET /liked-posts`
+- `GET /saved-posts`
+- `GET /profile-data`
+- `GET /static/*`
+
+WebSocket route:
+- `GET /ws/messages`
+
+## Database
 
 Schema file:
-- [backend/db/schema.sql](real-time-forum-layers-archituct/backend/db/schema.sql)
+- [backend/db/schema.sql](/home/mhilli/gitea/real-time-forum/backend/db/schema.sql)
 
 Main tables:
 - `users`
@@ -296,49 +399,9 @@ Main tables:
 
 Relationships:
 - one user can create many posts
-- one post can have many categories
 - one post can have many comments
 - one user can react to many posts
-- messages connect one sender and one receiver
-
-## Request Flow Example
-
-### Example: Add Comment
-
-1. The user submits a comment from the frontend.
-2. `CommentController` calls `CommentModel.createComment(...)`.
-3. The browser sends `POST /addcomment`.
-4. The route passes through session middleware.
-5. Middleware validates the session and adds user data to request context.
-6. `CommentHandler.AddComment(...)` reads the authenticated user from context.
-7. `CommentService.CreateComment(...)` validates the input.
-8. `CommentRepository` inserts the record.
-9. The handler returns JSON.
-10. The frontend updates the comment list and count.
-
-This pattern is repeated across most features.
-
-## Why This Project Is Called "Layers Architecture"
-
-Because the important architectural idea is separation of concerns.
-
-Instead of:
-- putting SQL inside handlers
-- putting business rules inside routes
-- mixing rendering with API calls
-
-the project tries to separate:
-- HTTP concerns
-- business rules
-- database concerns
-- UI rendering
-- API communication
-
-That separation makes the code easier to:
-- extend
-- debug
-- test
-- refactor
+- one user can exchange messages with many other users
 
 ## Running the Project
 
@@ -348,66 +411,39 @@ From the project root:
 go run ./backend/cmd
 ```
 
-The server:
-- initializes the SQLite database
-- loads the schema if needed
-- starts the HTTP server on `http://localhost:8081`
-
-## Main Folders
+The server starts on:
 
 ```text
-backend/
-  cmd/            application entry point
-  database/       DB initialization and connection
-  db/             schema.sql
-  handlers/       HTTP and WebSocket handlers
-  middleware/     auth and rate limiting
-  models/         shared backend data structures
-  repository/     SQL access
-  routes/         route wiring
-  service/        business logic
-  validation/     registration validation
-
-frontend/
-  static/
-    css/          styles
-    img/          images
-    javascript/
-      components/ reusable markup generators
-      controllers/page and feature logic
-      helpers/    small shared frontend utilities
-      models/     API calls
-      navigation/ navigation helpers
-      router/     SPA router
-      views/      DOM rendering
-    main.js       frontend entry point
+http://localhost:8081
 ```
 
-## Current Strengths
+What happens on startup:
+- the SQLite database connection is initialized
+- the schema is created if needed
+- the HTTP server is started
 
-- clear backend layering
-- session auth centralized in middleware
-- frontend route guard centralized in auth controller
-- reusable post rendering
-- real-time messaging integrated with the same auth system
+## Why This Project Uses Layers
 
-## Current Tradeoffs
+The project is intentionally organized to avoid:
+- putting SQL inside handlers
+- mixing business rules with transport logic
+- mixing DOM rendering with API calls
+- turning one controller or one handler into the whole application
 
-- some files are still large, especially the messages controller
-- naming is not fully consistent in all files
-- some modules mix multiple responsibilities more than ideal
-- the README describes the intended structure, but there is still room for cleanup in implementation details
+That separation makes the code easier to:
+- read
+- extend
+- debug
+- test
+- refactor
 
 ## Summary
 
-This project is a layered real-time forum application.
+This project is a layered real-time forum application with:
+- authentication and session-based access control
+- posts, comments, reactions, liked posts, and saved posts
+- profile summaries
+- real-time direct messaging
+- clear separation between transport, business logic, persistence, and UI layers
 
-Its main logic is:
-- authenticate users with cookie sessions
-- protect routes with middleware
-- manage features through services
-- persist data with repositories
-- render pages through frontend controllers, models, and views
-- support real-time user chat with WebSockets
-
-The architecture matters as much as the features: the project is a practical example of how to organize a full-stack app into layers.
+It is both a working application and a practical example of layered full-stack project organization.

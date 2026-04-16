@@ -4,10 +4,13 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"forum/backend/models"
 	"forum/backend/repository"
 )
+
+const maxMessageLength = 500
 
 type MessageService struct {
 	messageRepo *repository.MessageRepository
@@ -42,28 +45,34 @@ func (s *MessageService) GetUsersSnapshot(currentUserID int, onlineUsers map[int
 	return payload, nil
 }
 
-func (s *MessageService) GetConversationHistory(currentUserID, otherUserID, limit, offset int) ([]models.ChatMessage, bool, error) {
+func (s *MessageService) GetConversationHistory(currentUserID, otherUserID, limit, lastIndex int) ([]models.ChatMessage, bool, error) {
 	if currentUserID <= 0 || otherUserID <= 0 {
 		return nil, false, errors.New("invalid user id")
 	}
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if lastIndex < 0 {
+		lastIndex = 0
 	}
 
-	return s.messageRepo.GetConversationMessages(currentUserID, otherUserID, limit, offset)
+	return s.messageRepo.GetConversationMessages(currentUserID, otherUserID, limit, lastIndex)
 }
 
 func (s *MessageService) CreateMessage(senderID, receiverID int, text, senderNickname, receiverNickname string) (map[string]interface{}, error) {
 	if senderID <= 0 || receiverID <= 0 {
 		return nil, errors.New("invalid user id")
 	}
+	if senderID == receiverID {
+		return nil, errors.New("you cannot send a message to yourself")
+	}
 
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil, errors.New("message cannot be empty")
+	}
+	if utf8.RuneCountInString(text) > maxMessageLength {
+		return nil, errors.New("message cannot be more than 500 characters")
 	}
 
 	messageID, err := s.messageRepo.Create(senderID, receiverID, text)

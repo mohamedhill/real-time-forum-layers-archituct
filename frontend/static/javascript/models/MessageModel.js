@@ -53,7 +53,7 @@ export function ensureConversationState(userId) {
       loaded: false,
       loading: false,
       hasMore: true,
-      offset: 0,
+      lastIndex: 0,
       items: [],
     })
   }
@@ -71,7 +71,7 @@ export function storeMessage(message) {
     conversation.items.push(message)
   }
   conversation.loaded = true
-  conversation.offset = conversation.items.length
+  conversation.lastIndex = conversation.items[0]?.id || 0
   state.messages.set(partnerId, conversation.items)
 }
 
@@ -80,9 +80,10 @@ export function mergeHistoryPage(userId, messages, hasMore) {
   const existingIds = new Set(conversation.items.map((message) => message.id))
   const newMessages = messages.filter((message) => !existingIds.has(message.id))
   conversation.items = [...newMessages, ...conversation.items]
+  conversation.loaded = true
   conversation.loading = false
   conversation.hasMore = hasMore
-  conversation.offset = conversation.items.length
+  conversation.lastIndex = conversation.items[0]?.id || 0
 }
 
 export function markConversationLoading(userId, loading) {
@@ -94,8 +95,8 @@ export function canLoadConversationHistory(userId) {
   return !conversation.loading && (conversation.hasMore || !conversation.loaded)
 }
 
-export function getConversationOffset(userId) {
-  return ensureConversationState(userId).offset
+export function getConversationLastIndex(userId) {
+  return ensureConversationState(userId).lastIndex
 }
 
 export function addUnreadUser(userId) {

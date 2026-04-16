@@ -11,6 +11,9 @@ let sessionWatchdogId = null
 let lastSessionCheckAt = 0
 let sessionCheckPromise = null
 let loginRedirecting = false
+let sendMessageCooldownUntil = 0
+
+const SEND_MESSAGE_DEBOUNCE_MS = 500
 
 export function initializeOnlineUsers() {
   updateNotificationState()
@@ -157,9 +160,10 @@ function connectMessagesSocket() {
   }
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
   socket = new WebSocket(`${protocol}//${window.location.host}/ws/messages`)
+  console.log(socket);
   
   socket.addEventListener("open", () => {
-    setConnectionState("Connected")
+    //setConnectionState("Connected")
     socket.send(JSON.stringify({ type: "users" }))
     if (!sessionWatchdogId) {
       sessionWatchdogId = setInterval(() => {
@@ -223,14 +227,18 @@ function connectMessagesSocket() {
     if (payload.type === "history") {
       const partnerId = MessageModel.parseUserId(payload.data?.userId)
       if (partnerId == null) return
-      const offset = Number(payload.data?.offset) || 0
+      const lastIndex = Number(payload.data?.lastIndex) || 0
       const messages = (payload.data?.items || []).map(MessageModel.normalizeMessage).filter(Boolean)
       MessageModel.mergeHistoryPage(partnerId, messages, Boolean(payload.data?.hasMore))
       renderUsers()
       if (selectedUser?.id === partnerId) {
-        renderMessages({ preserveScroll: offset > 0, prependCount: messages.length })
+        renderMessages({ preserveScroll: lastIndex > 0, prependCount: messages.length })
       }
       return
+    }
+
+    if (payload.type === "error") {
+      alert(payload.data?.message || "Something went wrong")
     }
   })
 
@@ -373,19 +381,39 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
 }
 
 function sendMessage() {
+  const now = Date.now()
+  if (now < sendMessageCooldownUntil) return
+
   const input = document.getElementById("messageInput")
   if (!input || !selectedUser || !socket || socket.readyState !== WebSocket.OPEN) return
   const text = input.value.trim()
   if (!text) return
+  if (selectedUser.id === MessageModel.getState().currentUserId) {
+    alert("You cannot send a message to yourself")
+    return
+  }
+  if ([...text].length > 500) {
+    alert("Message cannot be more than 500 characters")
+    return
+  }
+  sendMessageCooldownUntil = now + SEND_MESSAGE_DEBOUNCE_MS
   ensureSessionValid({ throttleMs: 0 }).then((ok) => {
-    if (!ok) return
-    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    if (!ok) {
+      sendMessageCooldownUntil = 0
+      return
+    }
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      sendMessageCooldownUntil = 0
+      return
+    }
     socket.send(JSON.stringify({
       type: "message",
       receiver: selectedUser.id,
       message: text,
     }))
     input.value = ""
+  }).catch(() => {
+    sendMessageCooldownUntil = 0
   })
 }
 
@@ -490,7 +518,7 @@ function loadConversationHistory(userId) {
   if (!MessageModel.canLoadConversationHistory(userId)) return
   if (!socket || socket.readyState !== WebSocket.OPEN) return
   MessageModel.markConversationLoading(userId, true)
-  socket.send(JSON.stringify({ type: "history", receiver: userId, offset: MessageModel.getConversationOffset(userId), limit: 15 }))
+  socket.send(JSON.stringify({ type: "history", receiver: userId, lastIndex: MessageModel.getConversationLastIndex(userId), limit: 10 }))
 }
 
 function setConnectionState(text) {

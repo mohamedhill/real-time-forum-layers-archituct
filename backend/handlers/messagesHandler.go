@@ -165,9 +165,9 @@ func (h *MessageHandler) handleUserMessages(userID int, conn *websocket.Conn, sa
 				continue
 			}
 
-			offset, ok := parseOptionalInt(msg["offset"])
+			lastIndex, ok := parseOptionalInt(msg["lastIndex"])
 			if !ok {
-				offset = 0
+				lastIndex = 0
 			}
 
 			limit, ok := parseOptionalInt(msg["limit"])
@@ -175,7 +175,7 @@ func (h *MessageHandler) handleUserMessages(userID int, conn *websocket.Conn, sa
 				limit = 10
 			}
 
-			messages, hasMore, err := h.messageService.GetConversationHistory(userID, receiverID, limit, offset)
+			messages, hasMore, err := h.messageService.GetConversationHistory(userID, receiverID, limit, lastIndex)
 			if err != nil {
 				_ = safeConn.WriteJSON(map[string]interface{}{
 					"type": "error",
@@ -189,10 +189,10 @@ func (h *MessageHandler) handleUserMessages(userID int, conn *websocket.Conn, sa
 			_ = safeConn.WriteJSON(map[string]interface{}{
 				"type": "history",
 				"data": map[string]interface{}{
-					"userId":  receiverID,
-					"offset":  offset,
-					"hasMore": hasMore,
-					"items":   h.messageService.BuildMessagePayloads(messages),
+					"userId":    receiverID,
+					"lastIndex": lastIndex,
+					"hasMore":   hasMore,
+					"items":     h.messageService.BuildMessagePayloads(messages),
 				},
 			})
 
@@ -215,7 +215,7 @@ func (h *MessageHandler) handleUserMessages(userID int, conn *websocket.Conn, sa
 				sendToSingleUser(userID, map[string]interface{}{
 					"type": "error",
 					"data": map[string]interface{}{
-						"message": "Could not send message",
+						"message": err.Error(),
 					},
 				})
 				continue

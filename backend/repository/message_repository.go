@@ -25,7 +25,7 @@ func (r *MessageRepository) Create(senderID, receiverID int, text string) (int64
 	return result.LastInsertId()
 }
 
-func (r *MessageRepository) GetConversationMessages(currentUserID, otherUserID, limit, offset int) ([]models.ChatMessage, bool, error) {
+func (r *MessageRepository) GetConversationMessages(currentUserID, otherUserID, limit, lastIndex int) ([]models.ChatMessage, bool, error) {
 	rows, err := db.DataBase.Query(`
 		SELECT
 			m.id,
@@ -38,10 +38,11 @@ func (r *MessageRepository) GetConversationMessages(currentUserID, otherUserID, 
 		FROM messages m
 		JOIN users sender ON sender.id = m.sender_id
 		JOIN users receiver ON receiver.id = m.receiver_id
-		WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+		WHERE ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))
+		  AND (? <= 0 OR m.id < ?)
 		ORDER BY m.created_at DESC, m.id DESC
-		LIMIT ? OFFSET ?
-	`, currentUserID, otherUserID, otherUserID, currentUserID, limit+1, offset)
+		LIMIT ?
+	`, currentUserID, otherUserID, otherUserID, currentUserID, lastIndex, lastIndex, limit+1)
 	if err != nil {
 		return nil, false, err
 	}

@@ -22,7 +22,6 @@ export async function loadPosts() {
 }
 
 export async function loadlikedposts() {
-  detachInfiniteScroll()
   const posts = await PostModel.getLikedPosts();
   if (!posts?.length) {
     HomeView.renderEmptyPosts("No liked posts yet");
@@ -37,7 +36,7 @@ export async function loadlikedposts() {
 
 
 export async function loadsavedposts() {
-  detachInfiniteScroll()
+
   const posts = await PostModel.getSavedPosts();
   if (!posts?.length) {
     HomeView.renderEmptyPosts("No saved posts yet");
@@ -60,9 +59,7 @@ export function hydratePostInteractions(posts) {
   hydrateRenderedPosts(posts || [])
 }
 
-function detachInfiniteScroll() {
-  return
-}
+
 
 //  Create Post 
 

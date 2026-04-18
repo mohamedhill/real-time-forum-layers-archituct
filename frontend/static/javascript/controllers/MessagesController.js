@@ -147,7 +147,7 @@ function bindStaticEvents() {
 
   messagesBox?.addEventListener("scroll", throttle(() => {
     maybeLoadOlderMessages()
-  }, 200))
+  }, 30))
 }
 
 function connectMessagesSocket() {
@@ -199,9 +199,6 @@ function connectMessagesSocket() {
       const message = MessageModel.normalizeMessage(payload.data || payload)
       if (!message) return
       const state = MessageModel.getState()
-      // If a user signs up after we got the initial users snapshot, we may receive a message
-      // from an unknown id (e.g. incognito tab). Add a minimal user entry so notifications
-      // can still display the sender nickname.
       if (message.from != null && message.from !== state.currentUserId) {
         const exists = state.users.some((u) => u.id === message.from)
         if (!exists) {
@@ -476,7 +473,7 @@ function messageLayout() {
 
           <footer class="message-composer">
             <div class="input-wrapper">
-              <input id="messageInput" class="message-input" type="text" placeholder="Type a message..." disabled>
+              <input minlength="1" maxlength="500"  id="messageInput" class="message-input" type="text" placeholder="Type a message..." disabled>
             <button id="sendMessageBtn" class="send-message-btn">
   <i class="fa-solid fa-paper-plane"></i>
 </button>

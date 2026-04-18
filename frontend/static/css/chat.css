@@ -147,7 +147,7 @@
     scroll-behavior: smooth;
     flex: 1;
   }
-  .pinned-list::-webkit-scrollbar { display: none; }
+/*   .pinned-list::-webkit-scrollbar { display: none; } */
 
   .pinned-item {
     display: flex;
@@ -510,16 +510,16 @@
   gap: 8px;
 
   /* hide scrollbar - Firefox */
-  scrollbar-width: none;
+ /*  scrollbar-width: none; */
 
   /* hide scrollbar - IE / Edge */
-  -ms-overflow-style: none;
+/*   -ms-overflow-style: none; */
 }
 
 /* hide scrollbar - Chrome / Safari */
-.messages-box::-webkit-scrollbar {
+/* .messages-box::-webkit-scrollbar {
   display: none;
-}
+} */
 
 .messages-chat-header .chat-name,
 #chattingWith,

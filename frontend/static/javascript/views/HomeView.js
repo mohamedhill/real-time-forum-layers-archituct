@@ -272,6 +272,18 @@ export function appendPostList(posts) {
 
 export function prependPostCard(post) {
   const container = document.getElementById("posts-container");
+  if (!container) return;
+
+  const onlyEmptyState =
+    container.children.length === 1 &&
+    container.firstElementChild?.classList.contains("no-comments");
+
+  if (onlyEmptyState) {
+    container.innerHTML = "";
+  }
+
+  container.classList.remove("profile-container");
+  container.classList.add("posts-grid", "posts-grid-layout");
   container.prepend(buildPostCard(post));
 }
 

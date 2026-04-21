@@ -94,6 +94,7 @@ async function ensureSessionValid({ throttleMs = 4000 } = {}) {
 
 function handleSessionInvalid() {
   disconnectMessagesSocket()
+  MessageModel.clearState()
   MessageModel.setCurrentUserId(null)
   window.currentUser = null
   window.currentUserId = null

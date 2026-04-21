@@ -1,6 +1,7 @@
 import * as AuthModel from "../models/AuthModel.js";
 import * as AuthView from "../views/AuthView.js";
 import { disconnectMessagesSocket } from "./MessagesController.js";
+import * as MessageModel from "../models/MessageModel.js";
 import { Checkvalid } from "../helpers/checkvalidityinfo.js";
 
 
@@ -134,6 +135,7 @@ export async function handleLogin() {
 export async function handleLogout() {
   try {
     disconnectMessagesSocket();
+    MessageModel.clearState();
     await AuthModel.logout();
   } finally {
     clearSessionUser();

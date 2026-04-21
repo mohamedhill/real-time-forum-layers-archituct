@@ -11,6 +11,14 @@ export function getState() {
   return state
 }
 
+export function clearState() {
+  state.currentUserId = null
+  state.users = []
+  state.messages.clear()
+  state.historyMeta.clear()
+  unreadUserIds.clear()
+}
+
 export function getUnreadUserIds() {
   return unreadUserIds
 }

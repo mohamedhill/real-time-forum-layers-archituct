@@ -16,17 +16,19 @@ export async function createComment(commentData) {
   const res = await fetch("/addcomment", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(commentData),
   });
   const json = await parseJSONResponse(res, "Failed to create comment");
-  return { ok: true, status: res.status, data: json };
+  return { ok: res.ok, status: res.status, data: json };
 }
 
 export async function deleteComment(commentId) {
   const res = await fetch(`/deletecomment?commentId=${commentId}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
   });
   const json = await parseJSONResponse(res, "Failed to delete comment");
-  return { ok: true, status: res.status, data: json };
+  return { ok: res.ok, status: res.status, data: json };
 }

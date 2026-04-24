@@ -22,7 +22,14 @@ func (s *ReactionService) ToggleReaction(postID, userID int, t string) error {
 		return ErrInvalidReaction
 	}
 
-
+postExists, err := s.repo.PostExists(postID)
+	if err != nil {
+		return err
+	}
+	if !postExists {
+		return ErrPostNotExist
+	}
+		
 	if t == "save" {
 		exists, err := s.repo.Exists(postID, userID, "save")
 		if err != nil {

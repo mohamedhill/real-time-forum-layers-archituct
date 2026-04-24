@@ -17,10 +17,11 @@ export async function createPost(postData) {
   const res = await fetch("/addpost", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify(postData),
   });
   const json = await parseJSONResponse(res, "Failed to create post");
-  return { ok: true, status: res.status, data: json };
+  return { ok: res.ok, status: res.status, data: json };
 }
 
 

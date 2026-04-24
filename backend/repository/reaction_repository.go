@@ -24,6 +24,14 @@ func (r *ReactionRepository) Remove(postID, userID int, t string) error {
 		postID, userID, t)
 	return err
 }
+func (r *ReactionRepository) PostExists(postID int) (bool, error) {
+	var exists bool
+	err := db.DataBase.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)`,
+		postID,
+	).Scan(&exists)
+	return exists, err
+}
 
 func (r *ReactionRepository) Exists(postID, userID int, t string) (bool, error) {
 	var count int

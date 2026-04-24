@@ -14,6 +14,7 @@ import (
 
 // Sentinel errors for the auth service
 var (
+	ErrPostNotExist = errors.New("post does not exist")
 	ErrMethodNotAllowed   = errors.New("method not allowed")
 	ErrEmptyFields        = errors.New("some fields are empty")
 	ErrInvalidCredentials = errors.New("incorrect credentials, please try again")

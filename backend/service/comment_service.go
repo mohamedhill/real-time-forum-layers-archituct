@@ -9,6 +9,7 @@ import (
 	"forum/backend/repository"
 )
 
+
 // CommentService handles comment-related business logic
 type CommentService struct {
 	commentRepo *repository.CommentRepository
@@ -25,6 +26,13 @@ func (s *CommentService) CreateComment(input models.CommentInput, userID int, ni
 	}
 	if len([]rune(input.Content)) > 1000 {
 		return nil, errors.New("comment exceeds maximum length")
+	}
+	exists, err := s.commentRepo.CheckPostExists(input.PostID)
+	if err != nil {
+		return nil, ErrInternal
+	}
+	if !exists {
+		return nil, ErrPostNotExist
 	}
 
 	commentID, err := s.commentRepo.Create(input.PostID, userID, input.Content)

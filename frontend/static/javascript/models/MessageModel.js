@@ -118,9 +118,28 @@ export function clearUnreadUsers(userId = null) {
 
 export function getSortedChatUsers() {
   return [...state.users.filter((user) => user.id !== state.currentUserId)].sort((a, b) => {
-    const timeA = ensureConversationState(a.id).items.slice(-1)[0]?.timestamp || 0
-    const timeB = ensureConversationState(b.id).items.slice(-1)[0]?.timestamp || 0
-    return new Date(timeB) - new Date(timeA)
+    const lastMessageA = ensureConversationState(a.id).items.slice(-1)[0]
+    const lastMessageB = ensureConversationState(b.id).items.slice(-1)[0]
+
+    const hasMessagesA = Boolean(lastMessageA)
+    const hasMessagesB = Boolean(lastMessageB)
+
+    if (hasMessagesA && hasMessagesB) {
+      const timeA = new Date(lastMessageA.timestamp).getTime()
+      const timeB = new Date(lastMessageB.timestamp).getTime()
+
+      if (timeA !== timeB) {
+        return timeB - timeA
+      }
+    }
+
+    if (hasMessagesA !== hasMessagesB) {
+      return hasMessagesA ? -1 : 1
+    }
+
+    return (a.nickname || "").localeCompare(b.nickname || "", undefined, {
+      sensitivity: "base",
+    })
   })
 }
 

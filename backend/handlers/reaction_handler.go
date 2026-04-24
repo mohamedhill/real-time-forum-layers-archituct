@@ -41,11 +41,13 @@ func (h *ReactionHandler) React(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid postId")
 		return
 	}
-
+	
 	err = h.reactionService.ToggleReaction(postID, userID, input.Type)
 	if err != nil {
 
 		switch {
+		case errors.Is(err,service.ErrPostNotExist):
+			writeError(w, 400, err.Error())
 		case errors.Is(err, service.ErrInvalidReaction):
 			writeError(w, 400, err.Error())
 		default:

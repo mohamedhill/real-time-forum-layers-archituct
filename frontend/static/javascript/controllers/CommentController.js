@@ -1,5 +1,6 @@
 import * as CommentModel from "../models/CommentModel.js";
 import * as HomeView from "../views/HomeView.js";
+import { showErrorPopup, showConfirmPopup } from "../helpers/error.js";
 
 // Toggle comment section visibility
 export function toggleCommentSection(postId) {
@@ -37,7 +38,7 @@ export async function handleAddComment(postId) {
   const content = commentInput.value.trim();
 
   if (!content) {
-    alert("Please enter a comment");
+    showErrorPopup("Please enter a comment");
     return;
   }
 
@@ -55,7 +56,7 @@ export async function handleAddComment(postId) {
     }
   } catch (err) {
     console.error("Error adding comment:", err);
-    alert(err.message || "Error adding comment");
+    showErrorPopup(err.message || "Error adding comment");
   }
 }
 
@@ -77,20 +78,22 @@ export async function updateCommentCount(postId) {
 
 // Delete a comment
 export async function handleDeleteComment(postId, commentId) {
-  if (!confirm("Are you sure you want to delete this comment?")) {
-    return;
-  }
-
-  try {
-    const { ok } = await CommentModel.deleteComment(commentId);
-    if (ok) {
-      HomeView.removeComment(postId, commentId);
-      updateCommentCount(postId);
+  showConfirmPopup("Are you sure you want to delete this comment?", async (confirmed) => {
+    if (!confirmed) {
+      return;
     }
-  } catch (err) {
-    console.error("Error deleting comment:", err);
-    alert(err.message || "Error deleting comment");
-  }
+
+    try {
+      const { ok } = await CommentModel.deleteComment(commentId);
+      if (ok) {
+        HomeView.removeComment(postId, commentId);
+        updateCommentCount(postId);
+      }
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+      showErrorPopup(err.message || "Error deleting comment");
+    }
+  });
 }
 
 // Load initial comment counts for all posts

@@ -46,6 +46,10 @@ func (h *CommentHandler) AddComment(w http.ResponseWriter, r *http.Request) {
 
 	comment, err := h.commentService.CreateComment(input, userID, nickname)
 	if err != nil {
+		if errors.Is(err, service.ErrPostNotExist) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		if errors.Is(err, service.ErrInternal) {
 			writeError(w, http.StatusInternalServerError, service.ErrInternal.Error())
 			return

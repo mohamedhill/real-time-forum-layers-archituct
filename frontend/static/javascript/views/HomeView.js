@@ -23,11 +23,17 @@ export function buildHomePage() {
   createPostModal.id = "creatpostid";
   createPostModal.innerHTML = templates.creatpostdiv;
 
+  const errorModal = document.createElement("div");
+  errorModal.innerHTML = templates.errorPopup;
+
+  const confirmModal = document.createElement("div");
+  confirmModal.innerHTML = templates.confirmPopup;
+
   const Mobilenav = document.createElement("div");
   Mobilenav.className ="mobile-nav";
   Mobilenav.innerHTML = templates.mobilenav;
 
-  container.append(sidebar, mainContent,Mobilenav ,rightSidebar, createPostModal);
+  container.append(sidebar, mainContent,Mobilenav ,rightSidebar, createPostModal, errorModal, confirmModal);
 
   const bg = document.createElement("img");
   bg.className = "background";

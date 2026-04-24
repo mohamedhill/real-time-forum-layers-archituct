@@ -2,6 +2,7 @@ import * as navigate from "../navigation/Navigation.js"
 import * as HomeView from "../views/HomeView.js"
 import * as AuthModel from "../models/AuthModel.js"
 import * as MessageModel from "../models/MessageModel.js"
+import { showErrorPopup } from "../helpers/error.js"
 
 let socket = null
 let selectedUser = null
@@ -12,8 +13,13 @@ let lastSessionCheckAt = 0
 let sessionCheckPromise = null
 let loginRedirecting = false
 let sendMessageCooldownUntil = 0
+let typingStopTimerId = null
+let activeTypingReceiverId = null
+const incomingTypingTimeouts = new Map()
+let lastTypingSentAt = 0
 
 const SEND_MESSAGE_DEBOUNCE_MS = 500
+const TYPING_HEARTBEAT_MS = 900
 
 export function initializeOnlineUsers() {
   updateNotificationState()
@@ -22,6 +28,8 @@ export function initializeOnlineUsers() {
 }
 
 export function disconnectMessagesSocket() {
+  stopTyping()
+  clearAllIncomingTyping()
   if (!socket) return
   socket.close()
   socket = null
@@ -40,6 +48,8 @@ export function resetMessagesViewState() {
   const reset = MessageModel.resetSelectionState()
   selectedUser = reset.selectedUser
   pendingSelectedUserId = reset.pendingSelectedUserId
+  stopTyping()
+  clearAllIncomingTyping()
 }
 
 export function ShowMessagesPage(url = new URL(window.location.href)) {
@@ -135,6 +145,7 @@ function bindStaticEvents() {
       sendMessage()
     }
   })
+  input?.addEventListener("input", handleTypingInput)
 
   backBtn?.addEventListener("click", (e) => {
     e.preventDefault()
@@ -199,6 +210,7 @@ function connectMessagesSocket() {
     if (payload.type === "message") {
       const message = MessageModel.normalizeMessage(payload.data || payload)
       if (!message) return
+      clearIncomingTyping(message.from)
       const state = MessageModel.getState()
       if (message.from != null && message.from !== state.currentUserId) {
         const exists = state.users.some((u) => u.id === message.from)
@@ -235,8 +247,25 @@ function connectMessagesSocket() {
       return
     }
 
+    if (payload.type === "typing" || payload.type === "stopTyping") {
+      const senderId = MessageModel.parseUserId(payload.senderId || payload.data?.senderId)
+      if (!senderId) return
+
+      if (payload.type === "typing") {
+        markIncomingTyping(senderId)
+      } else {
+        clearIncomingTyping(senderId)
+      }
+
+      if (selectedUser?.id === senderId) {
+        renderMessages()
+        updateSelectedHeader()
+      }
+      return
+    }
+
     if (payload.type === "error") {
-      alert(payload.data?.message || "Something went wrong")
+      showErrorPopup(payload.data?.message || "Something went wrong")
     }
   })
 
@@ -324,6 +353,9 @@ function bindUserSelection(container, users, { enterChat }) {
       selectedUser = user
       pendingSelectedUserId = null
       clearUnreadMessages(user.id)
+      if (activeTypingReceiverId && activeTypingReceiverId !== user.id) {
+        stopTyping(activeTypingReceiverId)
+      }
       updateSelectedHeader()
       renderUsers()
       renderMessages()
@@ -349,13 +381,14 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
 
   const history = MessageModel.getConversationItems(selectedUser.id)
   const currentId = MessageModel.getState().currentUserId
+  const selectedUserIsTyping = isUserTyping(selectedUser.id)
 
-  if (!history.length) {
+  if (!history.length && !selectedUserIsTyping) {
     messagesBox.innerHTML = `<div class="chat-empty">No messages yet, say hi.</div>`
     return
   }
 
-  messagesBox.innerHTML = history.map((message) => {
+  const markup = history.map((message) => {
     const own = message.from === currentId
     const author = own
       ? (message.senderNickname || window.currentUser || "You")
@@ -369,7 +402,23 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
         </div>
       </div>
     `
-  }).join("")
+  })
+
+  if (selectedUserIsTyping) {
+    markup.push(`
+      <div class="message-row theirs typing-row">
+        <div class="message-bubble typing-bubble" aria-label="${escapeHtml(selectedUser.nickname)} is typing">
+          <div class="typing-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    `)
+  }
+
+  messagesBox.innerHTML = markup.join("")
 
   if (preserveScroll && prependCount > 0) {
     messagesBox.scrollTop = messagesBox.scrollHeight - previousHeight + previousTop
@@ -387,11 +436,11 @@ function sendMessage() {
   const text = input.value.trim()
   if (!text) return
   if (selectedUser.id === MessageModel.getState().currentUserId) {
-    alert("You cannot send a message to yourself")
+    showErrorPopup("You cannot send a message to yourself")
     return
   }
   if ([...text].length > 500) {
-    alert("Message cannot be more than 500 characters")
+    showErrorPopup("Message cannot be more than 500 characters")
     return
   }
   sendMessageCooldownUntil = now + SEND_MESSAGE_DEBOUNCE_MS
@@ -410,6 +459,7 @@ function sendMessage() {
       message: text,
     }))
     input.value = ""
+    stopTyping(selectedUser.id)
   }).catch(() => {
     sendMessageCooldownUntil = 0
   })
@@ -439,6 +489,7 @@ function exitConversationView() {
   if (backBtn) backBtn.style.display = 'none'
   const rightSidebar = document.getElementsByClassName('right-sidebar')[0]
   if (rightSidebar) rightSidebar.classList.remove('chat-fullscreen')
+  stopTyping()
   selectedUser = null
   renderUsers()
 }
@@ -476,7 +527,7 @@ function messageLayout() {
             <div class="input-wrapper">
               <input minlength="1" maxlength="500"  id="messageInput" class="message-input" type="text" placeholder="Type a message..." disabled>
             <button id="sendMessageBtn" class="send-message-btn">
-  <i class="fa-solid fa-paper-plane"></i>
+  <i class="ri-send-plane-fill"></i>
 </button>
             </div>
           </footer>
@@ -508,7 +559,7 @@ function updateSelectedHeader() {
     nameNode.textContent = "Select a user"; statusNode.textContent = ""; input.disabled = true; return
   }
   nameNode.textContent = selectedUser.nickname
-  statusNode.textContent = selectedUser.online ? "Online" : "Offline"
+  statusNode.textContent = isUserTyping(selectedUser.id) ? "Typing..." : (selectedUser.online ? "Online" : "Offline")
   input.disabled = false
 }
 
@@ -522,6 +573,86 @@ function loadConversationHistory(userId) {
 function setConnectionState(text) {
   const node = document.getElementById("chatConnectionState")
   if (node) node.textContent = text
+}
+
+function handleTypingInput() {
+  const input = document.getElementById("messageInput")
+  if (!input || !selectedUser) return
+
+  const hasText = input.value.trim().length > 0
+  if (!hasText) {
+    stopTyping(selectedUser.id)
+    return
+  }
+
+  const now = Date.now()
+  if (
+    activeTypingReceiverId !== selectedUser.id ||
+    now - lastTypingSentAt >= TYPING_HEARTBEAT_MS
+  ) {
+    sendTypingState("typing", selectedUser.id, { force: true })
+  }
+
+  if (typingStopTimerId) clearTimeout(typingStopTimerId)
+  typingStopTimerId = setTimeout(() => {
+    stopTyping(selectedUser?.id)
+  }, 1200)
+}
+
+function sendTypingState(type, receiverId, { force = false } = {}) {
+  if (!receiverId || !socket || socket.readyState !== WebSocket.OPEN) return
+  if (receiverId === MessageModel.getState().currentUserId) return
+
+  if (type === "typing" && activeTypingReceiverId === receiverId && !force) return
+  if (type === "stopTyping" && activeTypingReceiverId !== receiverId) return
+
+  socket.send(JSON.stringify({
+    type,
+    receiver: receiverId,
+  }))
+
+  if (type === "typing") {
+    activeTypingReceiverId = receiverId
+    lastTypingSentAt = Date.now()
+  } else {
+    activeTypingReceiverId = null
+    lastTypingSentAt = 0
+  }
+}
+
+function stopTyping(receiverId = activeTypingReceiverId) {
+  if (typingStopTimerId) {
+    clearTimeout(typingStopTimerId)
+    typingStopTimerId = null
+  }
+  if (!receiverId) return
+  sendTypingState("stopTyping", receiverId)
+}
+
+function markIncomingTyping(userId) {
+  clearIncomingTyping(userId)
+  incomingTypingTimeouts.set(userId, setTimeout(() => {
+    clearIncomingTyping(userId)
+    if (selectedUser?.id === userId) {
+      renderMessages()
+      updateSelectedHeader()
+    }
+  }, 1800))
+}
+
+function clearIncomingTyping(userId) {
+  const timeoutId = incomingTypingTimeouts.get(userId)
+  if (timeoutId) clearTimeout(timeoutId)
+  incomingTypingTimeouts.delete(userId)
+}
+
+function clearAllIncomingTyping() {
+  incomingTypingTimeouts.forEach((timeoutId) => clearTimeout(timeoutId))
+  incomingTypingTimeouts.clear()
+}
+
+function isUserTyping(userId) {
+  return incomingTypingTimeouts.has(userId)
 }
 
 function firstLetter(v = "?") { return v.charAt(0).toUpperCase() }

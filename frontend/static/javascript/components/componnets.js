@@ -54,8 +54,8 @@ export const sidebar = `
 export const mainContent = `
       <div class="header">
       <span class="theme">
-      <i data-theme="light"  id="light" class="icon fas fa-sun"></i>
-      <i data-theme="dark" id="dark" class="active icon fas fa-moon"></i>
+      <i data-theme="light"  id="light" class="icon ri-sun-line"></i>
+      <i data-theme="dark" id="dark" class="active icon ri-moon-clear-line"></i>
 
   </span>
 
@@ -149,7 +149,7 @@ export const mobilenav = `
             <div class="modal-header">
                 <h2 class="modal-title">Create Post</h2>
               <button id="close-btn"  class="close-btn">
-    <i class="fas fa-xmark"></i>
+    <i class="ri-close-line"></i>
 </button>
 
             </div>
@@ -184,6 +184,45 @@ export const mobilenav = `
             </form>
         </div>
     </div>`;
+
+export let errorPopup = `<div class="modal-overlay" id="errorPopupOverlay" style="display: none;">
+    <div class="modal error-modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Error</h2>
+            <button id="errorCloseBtn" class="close-btn">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <div class="error-content">
+            <div class="error-icon">
+                <i class="ri-error-warning-line"></i>
+            </div>
+            <p id="errorMessage">An error occurred</p>
+        </div>
+    </div>
+</div>`;
+
+export let confirmPopup = `<div class="modal-overlay" id="confirmPopupOverlay" style="display: none;">
+    <div class="modal error-modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Confirm Delete</h2>
+            <button id="confirmCloseBtn" class="close-btn">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+        <div class="error-content">
+            <div class="error-icon">
+                <i class="ri-question-line"></i>
+            </div>
+            <p id="confirmMessage">Are you sure you want to delete this comment?</p>
+            <div class="confirm-buttons">
+                <button id="confirmYesBtn" class="confirm-btn confirm-yes">Delete</button>
+                <button id="confirmNoBtn" class="confirm-btn confirm-no">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>`;
+
 export function errorpage({
   code = "404",
   title = "Oops! You're lost in space.",

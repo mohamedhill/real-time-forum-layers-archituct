@@ -2,6 +2,7 @@ import * as PostModel from "../models/PostModel.js";
 import * as HomeView from "../views/HomeView.js";
 import * as ReactionController from "./ReactionController.js";
 import * as CommentController from "./CommentController.js";
+import { showErrorPopup } from "../helpers/error.js";
 
 const POSTS_PAGE_SIZE = 1000
 
@@ -102,7 +103,7 @@ export async function handleCreatePost() {
       HomeView.hideCreatePostModal();
     }
   } catch (err) {
-    alert(err.message || "Error creating post");
+    showErrorPopup(err.message || "Error creating post");
   }
 }
 

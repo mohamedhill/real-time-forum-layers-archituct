@@ -200,8 +200,60 @@ body.dark-mode {
     transform: scale(0.99);
 }
 
+.error-modal {
+    max-width: 400px;
+    text-align: center;
+}
 
+.error-content {
+    margin-bottom: 24px;
+}
 
+.error-content .error-icon {
+    font-size: 48px;
+    color: #ef4444;
+    margin-bottom: 16px;
+}
 
+.error-content p {
+    color: var(--modal-text);
+    font-size: 16px;
+    line-height: 1.5;
+}
 
+.confirm-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.confirm-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-yes {
+    background: #ef4444;
+    color: white;
+}
+
+.confirm-yes:hover {
+    background: #dc2626;
+}
+
+.confirm-no {
+    background: var(--modal-surface-alt);
+    color: var(--modal-text);
+    border: 1px solid var(--modal-border);
+}
+
+.confirm-no:hover {
+    background: var(--modal-surface);
+}
 

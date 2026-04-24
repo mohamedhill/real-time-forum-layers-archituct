@@ -24,6 +24,18 @@ func (r *CommentRepository) Create(postID, userID int, content string) (int64, e
 	return result.LastInsertId()
 }
 
+
+func (r *CommentRepository) CheckPostExists(postID int) (bool, error) {
+	var exists bool
+	err := db.DataBase.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)`,
+		postID,
+	).Scan(&exists)
+	return exists, err
+}
+	
+	
+
 // GetByPostID returns all comments for a specific post
 func (r *CommentRepository) GetByPostID(postID int) ([]models.Comment, error) {
 	rows, err := db.DataBase.Query(`

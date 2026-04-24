@@ -1,5 +1,6 @@
 import * as ReactionModel from "../models/ReactionModel.js";
 import * as HomeView from "../views/HomeView.js";
+import { showErrorPopup } from "../helpers/error.js";
 
 
 
@@ -36,6 +37,8 @@ export async function handleReaction(postId, type) {
       oppositeWasActive,
       type
     );
+    
+    showErrorPopup(err.message || "Failed to send reaction");
   }
 
   reactionLoading = false;
@@ -46,7 +49,7 @@ export async function loadCountsForPost(postId) {
     const counts = await ReactionModel.fetchReactionCounts(postId);
     HomeView.updateAllReactionCounts(postId, counts);
   } catch (err) {
-    alert(err.message || "Failed to load reaction counts");
+    showErrorPopup(err.message || "Failed to load reaction counts");
   }
 }
 

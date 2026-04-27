@@ -54,6 +54,13 @@ type Session struct {
 	ExpiresAt string
 }
 
+// SessionUser represents a user session
+type SessionUser struct {
+	ID       int
+	Nickname string
+	Token    string
+}
+
 type ReactionInput struct {
 	PostID string `json:"postId"`
 	Type   string `json:"type"`

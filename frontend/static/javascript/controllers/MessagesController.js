@@ -408,6 +408,7 @@ function renderMessages({ preserveScroll = false, prependCount = 0 } = {}) {
     markup.push(`
       <div class="message-row theirs typing-row">
         <div class="message-bubble typing-bubble" aria-label="${escapeHtml(selectedUser.nickname)} is typing">
+          <div class="typing-author">${escapeHtml(selectedUser.nickname)} is typing</div>
           <div class="typing-dots" aria-hidden="true">
             <span></span>
             <span></span>

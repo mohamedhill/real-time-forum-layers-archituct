@@ -108,7 +108,6 @@ func (r *UserRepository) GetNicknameBySession(token string) (string, error) {
 	err := db.DataBase.QueryRow(
 		`SELECT nickname FROM users WHERE session = ?`, token,
 	).Scan(&nickname)
-
 	if err != nil {
 		return "", err
 	}
@@ -137,4 +136,13 @@ func (r *UserRepository) GetProfileSummary(userID int) (models.ProfileSummary, e
 	)
 
 	return profile, err
+}
+
+// SetOnlineStatus updates the online status of a user
+func (r *UserRepository) SetOnlineStatus(userID int, online bool) error {
+	_, err := db.DataBase.Exec(
+		`UPDATE users SET is_online = ? WHERE id = ?`,
+		online, userID,
+	)
+	return err
 }

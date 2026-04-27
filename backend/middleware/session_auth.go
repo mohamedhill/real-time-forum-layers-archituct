@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"forum/backend/models"
 	"forum/backend/service"
 )
 
@@ -11,14 +12,8 @@ type sessionContextKey string
 
 const sessionUserKey sessionContextKey = "session-user"
 
-type SessionUser struct {
-	ID       int
-	Nickname string
-	Token    string
-}
-
-func GetSessionUser(ctx context.Context) (SessionUser, bool) {
-	user, ok := ctx.Value(sessionUserKey).(SessionUser)
+func GetSessionUser(ctx context.Context) (models.SessionUser, bool) {
+	user, ok := ctx.Value(sessionUserKey).(models.SessionUser)
 	return user, ok
 }
 
@@ -61,7 +56,7 @@ func RequireSession(sessionService *service.SessionService, next http.HandlerFun
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), sessionUserKey, SessionUser{
+		ctx := context.WithValue(r.Context(), sessionUserKey, models.SessionUser{
 			ID:       userID,
 			Nickname: nickname,
 			Token:    cookie.Value,

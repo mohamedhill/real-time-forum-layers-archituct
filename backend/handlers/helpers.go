@@ -66,3 +66,23 @@ func getAuthenticatedUser(r *http.Request) (int, string, bool) {
 	}
 	return user.ID, user.Nickname, true
 }
+
+// parseInt parses an interface{} value to int, handling JSON unmarshaling types
+func parseInt(v interface{}) (int, bool) {
+	switch val := v.(type) {
+	case float64:
+		return int(val), true
+	case int:
+		return val, true
+	default:
+		return 0, false
+	}
+}
+
+// parseOptionalInt parses an optional interface{} value to int
+func parseOptionalInt(v interface{}) (int, bool) {
+	if v == nil {
+		return 0, false
+	}
+	return parseInt(v)
+}

@@ -8,11 +8,15 @@ import (
 
 // LogoutHandler handles POST /logout
 type LogoutHandler struct {
-	authService *service.AuthService
+	authService      *service.AuthService
+	webSocketService *service.WebSocketService
 }
 
-func NewLogoutHandler(authService *service.AuthService) *LogoutHandler {
-	return &LogoutHandler{authService: authService}
+func NewLogoutHandler(authService *service.AuthService, webSocketService *service.WebSocketService) *LogoutHandler {
+	return &LogoutHandler{
+		authService:      authService,
+		webSocketService: webSocketService,
+	}
 }
 
 func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +27,7 @@ func (h *LogoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if cookie, err := r.Cookie("session"); err == nil {
 		_ = h.authService.Logout(cookie.Value)
-		CloseConnectionsForSession(cookie.Value)
+		h.webSocketService.CloseConnectionsForSession(cookie.Value)
 	}
 
 	clearSessionCookie(w)

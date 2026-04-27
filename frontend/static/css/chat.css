@@ -464,15 +464,22 @@
 .mine .message-bubble { background: var(--primary-color); color: white; border-bottom-right-radius: 4px; }
 .theirs .message-bubble { background: var(--surface-color); color: var(--text-main); border-bottom-left-radius: 4px; }
 .typing-row {
-  min-height: 48px;
+  min-height: 56px;
 }
 .typing-bubble {
-  width: 68px;
+  width: auto;
   min-height: 42px;
   display: inline-flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
+  gap: 8px;
   padding: 10px 16px;
+}
+.typing-author {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 .typing-dots {
   display: inline-flex;

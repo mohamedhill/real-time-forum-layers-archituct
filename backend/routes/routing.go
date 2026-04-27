@@ -27,17 +27,18 @@ func Routing() {
 	commentService := service.NewCommentService(commentRepo)
 	profileService := service.NewProfileService(userRepo, postRepo)
 	messageService := service.NewMessageService(messageRepo)
+	webSocketService := service.NewWebSocketService(sessionService)
 
 	// Handlers (presentation layer)
 	reactionHandler := handlers.NewReactionHandler(reactionService)
 	loginHandler := handlers.NewLoginHandler(authService)
 	registerHandler := handlers.NewRegisterHandler(authService)
-	logoutHandler := handlers.NewLogoutHandler(authService)
+	logoutHandler := handlers.NewLogoutHandler(authService, webSocketService)
 	checkSessionHandler := handlers.NewCheckSessionHandler()
 	postHandler := handlers.NewPostHandler(postService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	profileHandler := handlers.NewProfileHandler(profileService)
-	messageHandler := handlers.NewMessageHandler(messageService)
+	messageHandler := handlers.NewMessageHandler(messageService, webSocketService)
 
 	apiRateLimiter := middleware.NewRateLimiterManager(500, time.Minute)
 

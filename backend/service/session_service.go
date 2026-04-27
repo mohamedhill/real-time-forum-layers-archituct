@@ -47,3 +47,13 @@ func (s *SessionService) ValidateSession(token string) (bool, bool, string, erro
 func (s *SessionService) GetUserFromSession(token string) (int, string, error) {
 	return s.userRepo.GetBySession(token)
 }
+
+// SetUserOnline sets a user's online status to true
+func (s *SessionService) SetUserOnline(userID int) error {
+	return s.userRepo.SetOnlineStatus(userID, true)
+}
+
+// SetUserOffline sets a user's online status to false
+func (s *SessionService) SetUserOffline(userID int) error {
+	return s.userRepo.SetOnlineStatus(userID, false)
+}
